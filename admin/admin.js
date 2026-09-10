@@ -366,14 +366,61 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 function setupChrome() {
-  $("#menuToggle").addEventListener("click", () => {
-    $("#sidebar").classList.toggle("open");
-  });
+  const menuToggle = $("#menuToggle");
+  const sidebar = $("#sidebar");
+
+  if (menuToggle && sidebar) {
+    menuToggle.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+    });
+  }
+
   $all(".admin-sidebar a").forEach(a => {
-    a.addEventListener("click", () => $("#sidebar").classList.remove("open"));
+    a.addEventListener("click", () => {
+      if (sidebar) sidebar.classList.remove("open");
+    });
   });
-  $("#previewClose").addEventListener("click", () => { $("#previewModal").hidden = true; });
+
+  // Preview modal must ALWAYS start closed.
+  const previewModal = $("#previewModal");
+  if (previewModal) {
+    previewModal.hidden = true;
+    previewModal.style.display = "none";
+    previewModal.setAttribute("aria-hidden", "true");
+  }
+
+  // Use delegated events so Close still works even if the modal markup
+  // is replaced or rendered after setupChrome().
+  document.addEventListener("click", (event) => {
+    const closeButton = event.target.closest("#previewClose");
+    if (closeButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      closePreview();
+      return;
+    }
+
+    // Clicking the dark backdrop closes the preview, but clicking
+    // inside the preview dialog does not.
+    const modal = $("#previewModal");
+    if (modal && event.target === modal) {
+      closePreview();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closePreview();
+  });
+
   updateConnBadge();
+}
+
+function closePreview() {
+  const modal = $("#previewModal");
+  if (!modal) return;
+  modal.hidden = true;
+  modal.style.display = "none";
+  modal.setAttribute("aria-hidden", "true");
 }
 
 function updateConnBadge() {
@@ -1253,8 +1300,13 @@ async function publishEditorArticle() {
 
 function openPreview(article) {
   const modal = $("#previewModal");
-  $("#previewRoot").innerHTML = articlePreviewHTML(article);
+  const root = $("#previewRoot");
+  if (!modal || !root) return;
+
+  root.innerHTML = articlePreviewHTML(article);
   modal.hidden = false;
+  modal.style.display = "";
+  modal.setAttribute("aria-hidden", "false");
 }
 
 function articlePreviewHTML(article) {
