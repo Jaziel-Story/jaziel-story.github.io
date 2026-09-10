@@ -171,9 +171,13 @@ function confirmDialog(message) {
     const modal = $("#confirmModal");
     $("#confirmMessage").textContent = message;
     modal.hidden = false;
+    modal.style.display = "flex";
+    modal.setAttribute("aria-hidden", "false");
 
     const cleanup = (result) => {
       modal.hidden = true;
+      modal.style.display = "none";
+      modal.setAttribute("aria-hidden", "true");
       okBtn.removeEventListener("click", onOk);
       cancelBtn.removeEventListener("click", onCancel);
       resolve(result);
@@ -411,6 +415,15 @@ function setupChrome() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closePreview();
   });
+
+  // Confirm modal must ALWAYS start closed. Some CSS/HTML combinations can
+  // otherwise display it before confirmDialog() has been called.
+  const confirmModal = $("#confirmModal");
+  if (confirmModal) {
+    confirmModal.hidden = true;
+    confirmModal.style.display = "none";
+    confirmModal.setAttribute("aria-hidden", "true");
+  }
 
   updateConnBadge();
 }
