@@ -6,112 +6,162 @@
   <meta name="description" content="Jaziel — trending stories, viral news, amazing discoveries and stories worth sharing.">
   <meta name="theme-color" content="#111111">
   <title>Jaziel — Trending Stories</title>
-  <style>
-    :root{--bg:#fff;--text:#111;--muted:#777;--line:#e8e8e8;--soft:#f5f5f5}
-    *{box-sizing:border-box}html{scroll-behavior:smooth}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    a{color:inherit;text-decoration:none}.wrap{max-width:1120px;margin:auto;padding:0 18px}
-    header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-    .nav{height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-    .logo{font-size:25px;font-weight:900;letter-spacing:-1.5px}
-    .nav-btn{border:0;background:var(--soft);width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer}
-    .hero{padding:28px 0 20px}.eyebrow{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);margin-bottom:9px}
-    .hero h1{font-size:clamp(34px,8vw,66px);line-height:.98;letter-spacing:-3px;margin:0 0 14px;max-width:850px}
-    .hero p{font-size:16px;line-height:1.6;color:var(--muted);max-width:650px;margin:0}
-    .categories{display:flex;gap:9px;overflow:auto;padding:12px 0 22px;scrollbar-width:none}
-    .categories::-webkit-scrollbar{display:none}.chip{white-space:nowrap;background:var(--soft);padding:9px 14px;border-radius:999px;font-size:13px;font-weight:700}
-    .featured{border-radius:18px;overflow:hidden;background:#111;color:#fff;min-height:360px;display:flex;align-items:end;position:relative}
-    .featured .fake-img{position:absolute;inset:0;background:linear-gradient(135deg,#333,#111 65%,#555)}
-    .featured-content{position:relative;padding:28px;max-width:760px}
-    .featured h2{font-size:clamp(27px,6vw,48px);line-height:1.02;letter-spacing:-1.8px;margin:7px 0 10px}
-    .featured p{color:#ddd;line-height:1.5;margin:0}
-    section{padding:34px 0}.section-head{display:flex;align-items:end;justify-content:space-between;margin-bottom:17px}
-    .section-head h2{font-size:24px;letter-spacing:-1px;margin:0}.section-head span{font-size:12px;color:var(--muted);font-weight:700}
-    .story{display:grid;grid-template-columns:112px 1fr;gap:15px;padding:15px 0;border-top:1px solid var(--line)}
-    .thumb{width:112px;height:86px;border-radius:12px;background:linear-gradient(135deg,#ddd,#999)}
-    .story h3{font-size:18px;line-height:1.18;letter-spacing:-.5px;margin:2px 0 7px}.meta{font-size:12px;color:var(--muted)}
-    .popular{counter-reset:item}.pop{display:flex;gap:15px;padding:17px 0;border-top:1px solid var(--line)}
-    .pop:before{counter-increment:item;content:counter(item);font-size:27px;font-weight:900;color:#bbb;width:30px}
-    .pop h3{margin:0;font-size:17px;line-height:1.25}
-    footer{border-top:1px solid var(--line);padding:30px 0 45px;color:var(--muted);font-size:13px}
-    .footer-logo{color:var(--text);font-size:21px;font-weight:900;margin-bottom:8px}
-    @media(min-width:760px){
-      .wrap{padding:0 28px}.hero{padding-top:55px}.story{grid-template-columns:180px 1fr}
-      .thumb{width:180px;height:120px}.content-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:50px}
-      .featured{min-height:470px}
-    }
-  </style>
+  <link rel="stylesheet" href="assets/css/style.css">
 </head>
+
 <body>
-<header>
-  <div class="wrap nav">
-    <a class="logo" href="/">JAZIEL</a>
-    <button class="nav-btn" aria-label="Search">⌕</button>
-  </div>
-</header>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="logo" href="/">JAZIEL</a>
 
-<main class="wrap">
-  <section class="hero">
-    <div class="eyebrow">What's happening now</div>
-    <h1>Stories worth knowing. Things worth sharing.</h1>
-    <p>Trending stories, fascinating discoveries, viral moments and news from around the world.</p>
-  </section>
-
-  <nav class="categories" aria-label="Categories">
-    <a class="chip" href="#latest">Latest</a>
-    <a class="chip" href="#popular">Popular</a>
-    <a class="chip" href="#latest">Amazing</a>
-    <a class="chip" href="#latest">World</a>
-    <a class="chip" href="#latest">Entertainment</a>
-    <a class="chip" href="#latest">Technology</a>
-  </nav>
-
-  <a class="featured" href="#latest">
-    <div class="fake-img"></div>
-    <div class="featured-content">
-      <div class="eyebrow" style="color:#bbb">Featured story</div>
-      <h2>The stories everyone is talking about today</h2>
-      <p>Discover the latest moments, trends and remarkable stories making waves around the world.</p>
-    </div>
-  </a>
-
-  <div class="content-grid">
-    <section id="latest">
-      <div class="section-head"><h2>Latest Stories</h2><span>UPDATED TODAY</span></div>
-
-      <a class="story" href="#">
-        <div class="thumb"></div>
-        <div><div class="eyebrow">World</div><h3>What is happening around the world right now</h3><div class="meta">5 min read · Today</div></div>
-      </a>
-
-      <a class="story" href="#">
-        <div class="thumb"></div>
-        <div><div class="eyebrow">Amazing</div><h3>A surprising discovery that has people talking</h3><div class="meta">4 min read · Today</div></div>
-      </a>
-
-      <a class="story" href="#">
-        <div class="thumb"></div>
-        <div><div class="eyebrow">Technology</div><h3>The technology trend changing the way we live</h3><div class="meta">6 min read · Today</div></div>
-      </a>
-    </section>
-
-    <section id="popular">
-      <div class="section-head"><h2>Most Popular</h2><span>THIS WEEK</span></div>
-      <div class="popular">
-        <a class="pop" href="#"><div><h3>The story everyone keeps sharing today</h3><div class="meta">Popular · 8 min read</div></div></a>
-        <a class="pop" href="#"><div><h3>Amazing moments captured at exactly the right time</h3><div class="meta">Trending · 5 min read</div></div></a>
-        <a class="pop" href="#"><div><h3>People can't stop talking about this incredible moment</h3><div class="meta">Viral · 4 min read</div></div></a>
+      <div class="header-actions">
+        <button class="icon-button" type="button" aria-label="Search">⌕</button>
       </div>
-    </section>
-  </div>
-</main>
+    </div>
+  </header>
 
-<footer>
-  <div class="wrap">
-    <div class="footer-logo">JAZIEL</div>
-    <div>Trending stories, viral moments and news from around the world.</div>
-    <div style="margin-top:18px">© 2026 Jaziel. All rights reserved.</div>
-  </div>
-</footer>
+  <main>
+    <div class="container">
+
+      <section class="hero">
+        <p class="hero-kicker">What's happening now</p>
+        <h1>Stories worth knowing. Things worth sharing.</h1>
+        <p>Trending stories, fascinating discoveries, viral moments and news from around the world.</p>
+      </section>
+
+      <nav class="category-nav" aria-label="Categories">
+        <a class="category-chip active" href="#latest">Latest</a>
+        <a class="category-chip" href="#popular">Popular</a>
+        <a class="category-chip" href="#latest">Amazing</a>
+        <a class="category-chip" href="#latest">World</a>
+        <a class="category-chip" href="#latest">Entertainment</a>
+        <a class="category-chip" href="#latest">Technology</a>
+      </nav>
+
+      <div class="ad-slot" aria-label="Advertisement">
+        Advertisement
+      </div>
+
+      <a class="featured-card" href="#latest">
+        <div class="featured-image" aria-hidden="true"></div>
+        <div class="featured-overlay" aria-hidden="true"></div>
+
+        <div class="featured-content">
+          <span class="story-category">Featured Story</span>
+          <h2>The stories everyone is talking about today</h2>
+          <p>Discover the latest moments, trends and remarkable stories making waves around the world.</p>
+          <div class="story-meta">Jaziel · Today</div>
+        </div>
+      </a>
+
+      <div class="ad-slot" aria-label="Advertisement">
+        Advertisement
+      </div>
+
+      <div class="content-grid">
+
+        <section id="latest">
+          <div class="section-title">
+            <h2>Latest Stories</h2>
+            <a href="#latest">View all</a>
+          </div>
+
+          <div class="story-list">
+
+            <a class="story-card" href="#">
+              <div class="story-thumb" aria-hidden="true"></div>
+              <div>
+                <div class="story-category">World</div>
+                <h3>What is happening around the world right now</h3>
+                <p class="story-excerpt">A quick look at the stories and events people are following today.</p>
+                <div class="story-meta">5 min read · Today</div>
+              </div>
+            </a>
+
+            <a class="story-card" href="#">
+              <div class="story-thumb" aria-hidden="true"></div>
+              <div>
+                <div class="story-category">Amazing</div>
+                <h3>A surprising discovery that has people talking</h3>
+                <p class="story-excerpt">An unusual moment and a remarkable story that caught attention.</p>
+                <div class="story-meta">4 min read · Today</div>
+              </div>
+            </a>
+
+            <a class="story-card" href="#">
+              <div class="story-thumb" aria-hidden="true"></div>
+              <div>
+                <div class="story-category">Technology</div>
+                <h3>The technology trend changing the way we live</h3>
+                <p class="story-excerpt">The latest technology story and what it could mean for everyday life.</p>
+                <div class="story-meta">6 min read · Today</div>
+              </div>
+            </a>
+
+          </div>
+        </section>
+
+        <aside class="sidebar">
+          <div class="ad-slot" aria-label="Advertisement">
+            Advertisement
+          </div>
+
+          <section id="popular">
+            <div class="section-title">
+              <h2>Most Popular</h2>
+              <a href="#popular">This week</a>
+            </div>
+
+            <ol class="popular-list">
+              <li class="popular-item">
+                <a href="#">
+                  <h3>The story everyone keeps sharing today</h3>
+                  <div class="story-meta">Popular · 8 min read</div>
+                </a>
+              </li>
+
+              <li class="popular-item">
+                <a href="#">
+                  <h3>Amazing moments captured at exactly the right time</h3>
+                  <div class="story-meta">Trending · 5 min read</div>
+                </a>
+              </li>
+
+              <li class="popular-item">
+                <a href="#">
+                  <h3>People can't stop talking about this incredible moment</h3>
+                  <div class="story-meta">Viral · 4 min read</div>
+                </a>
+              </li>
+            </ol>
+          </section>
+        </aside>
+
+      </div>
+
+      <div class="ad-slot" aria-label="Advertisement">
+        Advertisement
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <div class="footer-logo">JAZIEL</div>
+        <div>Trending stories, viral moments and news from around the world.</div>
+      </div>
+
+      <div class="footer-links">
+        <a href="#">About</a>
+        <a href="#">Contact</a>
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+      </div>
+
+      <div>© 2026 Jaziel. All rights reserved.</div>
+    </div>
+  </footer>
 </body>
 </html>
