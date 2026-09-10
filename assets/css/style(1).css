@@ -1,0 +1,464 @@
+/* =========================================================
+   JAZIEL — Main Stylesheet
+   Mobile-first • Fast • Ad-friendly
+   ========================================================= */
+
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --text: #111111;
+  --muted: #6d6d6d;
+  --line: #e6e6e3;
+  --accent: #111111;
+  --max: 1180px;
+  --radius: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.55;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+/* ---------- Layout ---------- */
+
+.container {
+  width: min(calc(100% - 28px), var(--max));
+  margin-inline: auto;
+}
+
+main {
+  min-height: 70vh;
+}
+
+.section {
+  padding: 28px 0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.section-title h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.section-title a {
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+/* ---------- Header ---------- */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(247, 247, 245, .96);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+}
+
+.header-inner {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.logo {
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: -.06em;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+  padding: 34px 0 22px;
+}
+
+.hero-kicker {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+
+.hero h1 {
+  max-width: 850px;
+  margin: 0;
+  font-size: clamp(2.25rem, 10vw, 5.4rem);
+  line-height: .96;
+  letter-spacing: -.065em;
+}
+
+.hero p {
+  max-width: 650px;
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+/* ---------- Categories ---------- */
+
+.category-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 10px;
+  scrollbar-width: none;
+}
+
+.category-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.category-chip {
+  flex: 0 0 auto;
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: .84rem;
+  font-weight: 700;
+}
+
+.category-chip.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ---------- Featured Story ---------- */
+
+.featured-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 420px;
+  display: flex;
+  align-items: flex-end;
+  border-radius: var(--radius);
+  background: #222;
+}
+
+.featured-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: linear-gradient(135deg, #222, #777);
+}
+
+.featured-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,.82),
+    rgba(0,0,0,.18) 65%,
+    rgba(0,0,0,.02)
+  );
+}
+
+.featured-content {
+  position: relative;
+  z-index: 2;
+  padding: 24px;
+  color: #fff;
+}
+
+.story-category {
+  display: inline-block;
+  margin-bottom: 9px;
+  font-size: .72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.featured-content h2 {
+  margin: 0;
+  max-width: 800px;
+  font-size: clamp(1.65rem, 7vw, 3.6rem);
+  line-height: 1.03;
+  letter-spacing: -.045em;
+}
+
+.story-meta {
+  margin-top: 12px;
+  color: rgba(255,255,255,.72);
+  font-size: .78rem;
+}
+
+/* ---------- Ad Slots ---------- */
+
+.ad-slot {
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 22px 0;
+  border: 1px dashed #d5d5d1;
+  border-radius: 12px;
+  color: #999;
+  background: #fafaf8;
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+/* Keep Adsterra code inside these containers.
+   Replace the placeholder text with the supplied Adsterra code. */
+
+.ad-slot:empty::before {
+  content: "Advertisement";
+}
+
+/* ---------- Story List ---------- */
+
+.story-list {
+  display: grid;
+  gap: 16px;
+}
+
+.story-card {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  gap: 14px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.story-thumb {
+  width: 112px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #ddd, #aaa);
+}
+
+.story-card h3 {
+  margin: 2px 0 6px;
+  font-size: 1rem;
+  line-height: 1.2;
+  letter-spacing: -.015em;
+}
+
+.story-excerpt {
+  margin: 0;
+  color: var(--muted);
+  font-size: .82rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.story-card .story-meta {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: .72rem;
+}
+
+/* ---------- Popular ---------- */
+
+.popular-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: popular;
+}
+
+.popular-item {
+  counter-increment: popular;
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.popular-item::before {
+  content: counter(popular, decimal-leading-zero);
+  color: #aaa;
+  font-size: .9rem;
+  font-weight: 800;
+}
+
+.popular-item h3 {
+  margin: 0;
+  font-size: .98rem;
+  line-height: 1.25;
+}
+
+/* ---------- Two-column sections ---------- */
+
+.content-grid {
+  display: grid;
+  gap: 32px;
+}
+
+.sidebar {
+  min-width: 0;
+}
+
+/* ---------- Search ---------- */
+
+.search-box {
+  display: flex;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.search-box input {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  outline: none;
+}
+
+.search-box input:focus {
+  border-color: #999;
+}
+
+.search-box button {
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ---------- Footer ---------- */
+
+.site-footer {
+  margin-top: 40px;
+  padding: 34px 0;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+.footer-inner {
+  display: grid;
+  gap: 18px;
+}
+
+.footer-logo {
+  color: var(--text);
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+}
+
+/* ---------- Desktop ---------- */
+
+@media (min-width: 760px) {
+  .container {
+    width: min(calc(100% - 48px), var(--max));
+  }
+
+  .header-inner {
+    min-height: 68px;
+  }
+
+  .hero {
+    padding: 60px 0 32px;
+  }
+
+  .section {
+    padding: 38px 0;
+  }
+
+  .story-card {
+    grid-template-columns: 180px 1fr;
+  }
+
+  .story-thumb {
+    width: 180px;
+    height: 115px;
+  }
+
+  .content-grid {
+    grid-template-columns: minmax(0, 1fr) 330px;
+    align-items: start;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 92px;
+  }
+
+  .featured-card {
+    min-height: 540px;
+  }
+
+  .footer-inner {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+}
