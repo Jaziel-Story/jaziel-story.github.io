@@ -10,10 +10,10 @@
   <script src="assets/js/main.js" defer></script>
 </head>
 
-<body>
+<body data-page="home">
   <header class="site-header">
     <div class="container header-inner">
-      <a class="logo" href="/">JAZIEL</a>
+      <a class="logo" href="index.html">JAZIEL</a>
 
       <div class="header-actions">
         <button class="icon-button" type="button" aria-label="Search">⌕</button>
@@ -33,15 +33,13 @@
       <nav class="category-nav" aria-label="Categories">
         <a class="category-chip active" href="#latest">Latest</a>
         <a class="category-chip" href="#popular">Popular</a>
-        <a class="category-chip" href="#latest">Amazing</a>
-        <a class="category-chip" href="#latest">World</a>
-        <a class="category-chip" href="#latest">Entertainment</a>
-        <a class="category-chip" href="#latest">Technology</a>
+        <a class="category-chip" href="category.html?category=Amazing">Amazing</a>
+        <a class="category-chip" href="category.html?category=World">World</a>
+        <a class="category-chip" href="category.html?category=Entertainment">Entertainment</a>
+        <a class="category-chip" href="category.html?category=Technology">Technology</a>
       </nav>
 
-      <div class="ad-slot" aria-label="Advertisement">
-        Advertisement
-      </div>
+      <div class="ad-slot" aria-label="Advertisement"></div>
 
       <a class="featured-card" href="#latest">
         <div class="featured-image" aria-hidden="true"></div>
@@ -49,15 +47,13 @@
 
         <div class="featured-content">
           <span class="story-category">Featured Story</span>
-          <h2>The stories everyone is talking about today</h2>
-          <p>Discover the latest moments, trends and remarkable stories making waves around the world.</p>
-          <div class="story-meta">Jaziel · Today</div>
+          <h2>Loading the latest story…</h2>
+          <p></p>
+          <div class="story-meta"></div>
         </div>
       </a>
 
-      <div class="ad-slot" aria-label="Advertisement">
-        Advertisement
-      </div>
+      <div class="ad-slot" aria-label="Advertisement"></div>
 
       <div class="content-grid">
 
@@ -68,44 +64,12 @@
           </div>
 
           <div class="story-list">
-
-            <a class="story-card" href="#">
-              <div class="story-thumb" aria-hidden="true"></div>
-              <div>
-                <div class="story-category">World</div>
-                <h3>What is happening around the world right now</h3>
-                <p class="story-excerpt">A quick look at the stories and events people are following today.</p>
-                <div class="story-meta">5 min read · Today</div>
-              </div>
-            </a>
-
-            <a class="story-card" href="#">
-              <div class="story-thumb" aria-hidden="true"></div>
-              <div>
-                <div class="story-category">Amazing</div>
-                <h3>A surprising discovery that has people talking</h3>
-                <p class="story-excerpt">An unusual moment and a remarkable story that caught attention.</p>
-                <div class="story-meta">4 min read · Today</div>
-              </div>
-            </a>
-
-            <a class="story-card" href="#">
-              <div class="story-thumb" aria-hidden="true"></div>
-              <div>
-                <div class="story-category">Technology</div>
-                <h3>The technology trend changing the way we live</h3>
-                <p class="story-excerpt">The latest technology story and what it could mean for everyday life.</p>
-                <div class="story-meta">6 min read · Today</div>
-              </div>
-            </a>
-
+            <p class="loading-text">Loading stories…</p>
           </div>
         </section>
 
         <aside class="sidebar">
-          <div class="ad-slot" aria-label="Advertisement">
-            Advertisement
-          </div>
+          <div class="ad-slot" aria-label="Advertisement"></div>
 
           <section id="popular">
             <div class="section-title">
@@ -114,35 +78,14 @@
             </div>
 
             <ol class="popular-list">
-              <li class="popular-item">
-                <a href="#">
-                  <h3>The story everyone keeps sharing today</h3>
-                  <div class="story-meta">Popular · 8 min read</div>
-                </a>
-              </li>
-
-              <li class="popular-item">
-                <a href="#">
-                  <h3>Amazing moments captured at exactly the right time</h3>
-                  <div class="story-meta">Trending · 5 min read</div>
-                </a>
-              </li>
-
-              <li class="popular-item">
-                <a href="#">
-                  <h3>People can't stop talking about this incredible moment</h3>
-                  <div class="story-meta">Viral · 4 min read</div>
-                </a>
-              </li>
+              <li class="loading-text">Loading…</li>
             </ol>
           </section>
         </aside>
 
       </div>
 
-      <div class="ad-slot" aria-label="Advertisement">
-        Advertisement
-      </div>
+      <div class="ad-slot" aria-label="Advertisement"></div>
 
     </div>
   </main>
@@ -155,14 +98,20 @@
       </div>
 
       <div class="footer-links">
-        <a href="#">About</a>
-        <a href="#">Contact</a>
-        <a href="#">Privacy</a>
-        <a href="#">Terms</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
       </div>
 
       <div>© 2026 Jaziel. All rights reserved.</div>
     </div>
   </footer>
+
+  <noscript>
+    <div class="container">
+      <p class="empty-state">Jaziel needs JavaScript enabled to load stories from articles.json.</p>
+    </div>
+  </noscript>
 </body>
 </html>
