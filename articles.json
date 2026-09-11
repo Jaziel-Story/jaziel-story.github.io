@@ -9,7 +9,7 @@
       "date": "2026-09-11",
       "readTime": "5 min read",
       "dek": "A quick look at the stories attracting attention today.",
-      "cover": "",
+      "cover": "assets/images/articles/the-stories-everyone-is-talking-about-today-cover.png",
       "intro": "Here are some of the stories and moments people are following today.",
       "sections": [
         {
@@ -29,7 +29,7 @@
       "og": {
         "title": "The Stories Everyone Is Talking About Today",
         "description": "Trending stories and remarkable moments from around the world.",
-        "image": ""
+        "image": "assets/images/articles/the-stories-everyone-is-talking-about-today-cover.png"
       },
       "tags": [
         "trending",
@@ -37,7 +37,8 @@
         "world",
         "news"
       ],
-      "relatedArticles": []
+      "relatedArticles": [],
+      "featured": false
     },
     {
       "id": "story-002",
