@@ -108,46 +108,26 @@
     const sections = getEditorSectionRows();
     if (!sections.length) return;
 
-    // The normal preview should already contain every section. If it does,
-    // leave it untouched so we do not duplicate anything.
+    // If every section heading already made it into the normal renderer,
+    // there is nothing to repair. This keeps the normal preview untouched.
     const renderedHeadings = body.querySelectorAll("h2").length;
-    const renderedSectionMarkers = body.querySelectorAll("[data-preview-section-index]").length;
     const expectedHeadingCount = sections.filter(s => s.heading).length;
+    if (renderedHeadings >= expectedHeadingCount) return;
 
-    if (renderedHeadings >= expectedHeadingCount && renderedSectionMarkers >= renderedHeadings) {
-      return;
-    }
-
-    // Rebuild the section content in one deterministic block. The intro is
-    // the first unmarked paragraph; everything after the section block
-    // (stored images, verse, closing, tags) stays in place.
     const sectionNodes = [];
     sections.forEach(section => sectionNodes.push(...makeSectionNodes(section)));
 
-    const firstSectionBoundary = body.querySelector("h2, .article-figure, .verse-block, .article-closing");
-    if (!firstSectionBoundary) {
-      sectionNodes.forEach(node => body.appendChild(node));
-      return;
-    }
-
-    // Remove only the existing section headings/paragraphs that are part of
-    // the normal renderer. Keep the intro paragraph, images, verse and
-    // closing intact.
+    // The intro is the first paragraph in the article body. Keep it intact;
+    // rebuild the section paragraphs/headings after it.
     const intro = [...body.children].find(el =>
-      el.tagName === "P" &&
-      !el.classList.contains("article-closing") &&
-      !el.closest(".article-figure") &&
-      !el.classList.contains("verse-block")
+      el.tagName === "P" && !el.classList.contains("article-closing")
     );
 
     [...body.querySelectorAll("h2")].forEach(el => el.remove());
 
-    // Remove section paragraphs while preserving the intro. We identify the
-    // section block by position: all paragraphs before the first figure,
-    // verse or closing, except the first intro paragraph, belong to sections.
+    // Remove normal-rendered section paragraphs but preserve the intro.
     const stop = body.querySelector(".article-figure, .verse-block, .article-closing");
-    const children = [...body.children];
-    children.forEach(el => {
+    [...body.children].forEach(el => {
       if (el === intro || el === stop) return;
       if (el.tagName === "P") el.remove();
     });
