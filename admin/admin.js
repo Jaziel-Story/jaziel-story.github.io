@@ -150,7 +150,33 @@ function fileToBase64(file) {
 function safeExt(filename) {
   const m = /\.([a-zA-Z0-9]+)$/.exec(filename || "");
   const ext = m ? m[1].toLowerCase() : "jpg";
-  return /^(jpg|jpeg|png|webp|gif|svg)$/.test(ext) ? ext : "jpg";
+  return /^(jpg|jpeg|png|webp|gif)$/.test(ext) ? ext : "jpg";
+}
+
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+function validateImageFile(file, label = "Image") {
+  if (!file) throw new Error(label + " file is missing.");
+  if (!ALLOWED_IMAGE_TYPES.has(file.type)) throw new Error(label + " must be JPG, PNG, WebP, or GIF.");
+  if (file.size > MAX_IMAGE_BYTES) throw new Error(label + " is too large. Maximum size is 10 MB.");
+  return true;
+}
+function isValidImageUrl(value) {
+  try { const url = new URL(String(value || "").trim()); return url.protocol === "https:" || url.protocol === "http:"; } catch { return false; }
+}
+function imagePathUsedByOtherArticle(path, currentArticleId) {
+  return state.articles.some(article => {
+    if (!article || article.id === currentArticleId) return false;
+    if (article.cover === path) return true;
+    return (article.images || []).some(img => (typeof img === "string" ? img : img && img.src) === path);
+  });
+}
+function uniqueUploadPath(basePath, currentArticleId) {
+  if (!imagePathUsedByOtherArticle(basePath, currentArticleId)) return basePath;
+  const dot = basePath.lastIndexOf(".");
+  const stem = dot >= 0 ? basePath.slice(0, dot) : basePath;
+  const ext = dot >= 0 ? basePath.slice(dot) : "";
+  return stem + "-" + Date.now() + ext;
 }
 
 /* ---------- Toasts ---------- */
@@ -935,7 +961,9 @@ function bindEditorEvents(root) {
     });
   });
   $("#inCoverUrl").addEventListener("input", () => {
-    state.editor.cover = $("#inCoverUrl").value;
+    const value = $("#inCoverUrl").value.trim();
+    $("#inCoverUrl").setCustomValidity(value && !isValidImageUrl(value) ? "Use a valid http(s) image URL." : "");
+    state.editor.cover = value;
     state.pendingCoverFile = null;
     renderCoverPreview();
   });
@@ -1048,6 +1076,7 @@ function renderSections() {
 
 function handleCoverFile(file) {
   if (!file) return;
+  try { validateImageFile(file, "Cover image"); } catch (err) { toast(err.message, "error"); return; }
   state.pendingCoverFile = file;
   state.editor.cover = ""; // will be filled in on publish once uploaded
   $("#inCoverUrl").value = "";
@@ -1080,6 +1109,7 @@ function renderBodyImages() {
       const idx = +el.dataset.imageFile;
       const file = el.files[0];
       if (!file) return;
+      try { validateImageFile(file, "Body image " + (idx + 1)); } catch (err) { el.value = ""; toast(err.message, "error"); return; }
       state.pendingBodyImageFiles[idx] = file;
       state.editor.images[idx].src = "";
     });
@@ -1087,7 +1117,9 @@ function renderBodyImages() {
   $all("[data-image-url]", wrap).forEach(el => {
     el.addEventListener("input", () => {
       const idx = +el.dataset.imageUrl;
-      state.editor.images[idx].src = el.value;
+      const value = el.value.trim();
+      el.setCustomValidity(value && !isValidImageUrl(value) ? "Use a valid http(s) image URL." : "");
+      state.editor.images[idx].src = value;
       delete state.pendingBodyImageFiles[idx];
     });
   });
@@ -1280,16 +1312,19 @@ async function publishEditorArticle() {
   try {
     const slug = state.editor.slug.trim();
     const title = state.editor.title.trim();
+    const uploadedImagePaths = [];
 
     // Upload cover if a new file was selected. This runs BEFORE
     // buildArticleFromEditor() and writes the final path back onto
     // state.editor.cover, so the built article already has the real path.
     if (state.pendingCoverFile) {
       const ext = safeExt(state.pendingCoverFile.name);
-      const path = `${IMAGES_DIR}/${slug}-cover.${ext}`;
+      const candidatePath = `${IMAGES_DIR}/${slug}-cover.${ext}`;
+      const path = uniqueUploadPath(candidatePath, state.editorOriginalId);
       const b64 = await fileToBase64(state.pendingCoverFile);
       const existing = await ghGetFile(path, { binary: true });
       await ghPutFile(path, b64, `Admin: upload cover image for "${title}"`, existing ? existing.sha : undefined);
+      uploadedImagePaths.push(path);
       state.editor.cover = path;
     }
 
@@ -1309,10 +1344,12 @@ async function publishEditorArticle() {
       }
       try {
         const ext = safeExt(file.name);
-        const path = `${IMAGES_DIR}/${slug}-${idx + 1}.${ext}`;
+        const candidatePath = `${IMAGES_DIR}/${slug}-${idx + 1}.${ext}`;
+        const path = uniqueUploadPath(candidatePath, state.editorOriginalId);
         const b64 = await fileToBase64(file);
         const existing = await ghGetFile(path, { binary: true });
         await ghPutFile(path, b64, `Admin: upload image ${idx + 1} for "${title}"`, existing ? existing.sha : undefined);
+        uploadedImagePaths.push(path);
         state.editor.images[idx].src = path;
         console.log(`[publish] body image ${idx} uploaded ->`, path);
       } catch (imgErr) {
@@ -1371,6 +1408,16 @@ async function publishEditorArticle() {
     window.location.hash = `#/editor/${encodeURIComponent(article.slug)}`;
   } catch (err) {
     console.error(err);
+    const referenced = new Set();
+    state.articles.forEach(a => {
+      if (a.cover) referenced.add(a.cover);
+      (a.images || []).forEach(img => { const src = typeof img === "string" ? img : img && img.src; if (src) referenced.add(src); });
+    });
+    for (const path of uploadedImagePaths || []) {
+      if (referenced.has(path)) continue;
+      try { const file = await ghGetFile(path, { binary: true }); if (file) await ghDeleteFile(path, file.sha, "Admin: rollback failed image upload"); }
+      catch (cleanupErr) { console.warn("Could not roll back uploaded image", path, cleanupErr); }
+    }
     toast(`Publishing failed. Please try again. (${err.message})`, "error");
   } finally {
     publishBtn.disabled = false;
