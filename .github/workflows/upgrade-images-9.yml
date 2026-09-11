@@ -1,0 +1,76 @@
+name: Upgrade image management
+
+on:
+  push:
+    branches:
+      - audit-images-9
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch admin image handling
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'admin/admin.js';
+          let s = fs.readFileSync(path, 'utf8');
+          const oldSafe = `function safeExt(filename) {\n  const m = /\\.([a-zA-Z0-9]+)$/.exec(filename || "");\n  const ext = m ? m[1].toLowerCase() : "jpg";\n  return /^(jpg|jpeg|png|webp|gif|svg)$/.test(ext) ? ext : "jpg";\n}`;
+          const newSafe = `function safeExt(filename) {\n  const m = /\\.([a-zA-Z0-9]+)$/.exec(filename || "");\n  const ext = m ? m[1].toLowerCase() : "jpg";\n  return /^(jpg|jpeg|png|webp|gif)$/.test(ext) ? ext : "jpg";\n}\n\nconst MAX_IMAGE_BYTES = 10 * 1024 * 1024;\nconst ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);\nfunction validateImageFile(file, label = "Image") {\n  if (!file) throw new Error(`${label} file is missing.`);\n  if (!ALLOWED_IMAGE_TYPES.has(file.type)) throw new Error(`${label} must be JPG, PNG, WebP, or GIF.`);\n  if (file.size > MAX_IMAGE_BYTES) throw new Error(`${label} is too large. Maximum size is 10 MB.`);\n  return true;\n}\nfunction isValidImageUrl(value) {\n  try { const url = new URL(String(value || "").trim()); return url.protocol === "https:" || url.protocol === "http:"; }\n  catch { return false; }\n}\nfunction imagePathUsedByOtherArticle(path, currentArticleId) {\n  return state.articles.some(article => {\n    if (!article || article.id === currentArticleId) return false;\n    if (article.cover === path) return true;\n    return (article.images || []).some(img => (typeof img === "string" ? img : img && img.src) === path);\n  });\n}\nfunction uniqueUploadPath(basePath, currentArticleId) {\n  if (!imagePathUsedByOtherArticle(basePath, currentArticleId)) return basePath;\n  const dot = basePath.lastIndexOf(".");\n  const stem = dot >= 0 ? basePath.slice(0, dot) : basePath;\n  const ext = dot >= 0 ? basePath.slice(dot) : "";\n  return `${stem}-${Date.now()}${ext}`;\n}`;
+          if (!s.includes(oldSafe)) throw new Error('safeExt anchor not found');
+          s = s.replace(oldSafe, newSafe);
+
+          const oldCover = `function handleCoverFile(file) {\n  if (!file) return;\n  state.pendingCoverFile = file;`;
+          const newCover = `function handleCoverFile(file) {\n  if (!file) return;\n  try { validateImageFile(file, "Cover image"); } catch (err) { toast(err.message, "error"); return; }\n  state.pendingCoverFile = file;`;
+          if (!s.includes(oldCover)) throw new Error('handleCoverFile anchor not found');
+          s = s.replace(oldCover, newCover);
+
+          const oldUrl = `$("#inCoverUrl").addEventListener("input", () => {\n    state.editor.cover = $("#inCoverUrl").value;\n    state.pendingCoverFile = null;`;
+          const newUrl = `$("#inCoverUrl").addEventListener("input", () => {\n    const value = $("#inCoverUrl").value.trim();\n    $("#inCoverUrl").setCustomValidity(value && !isValidImageUrl(value) ? "Use a valid http(s) image URL." : "");\n    state.editor.cover = value;\n    state.pendingCoverFile = null;`;
+          if (!s.includes(oldUrl)) throw new Error('cover URL anchor not found');
+          s = s.replace(oldUrl, newUrl);
+
+          const oldBody = `      const file = el.files[0];\n      if (!file) return;\n      state.pendingBodyImageFiles[idx] = file;`;
+          const newBody = `      const file = el.files[0];\n      if (!file) return;\n      try { validateImageFile(file, `Body image ${idx + 1}`); } catch (err) { el.value = ""; toast(err.message, "error"); return; }\n      state.pendingBodyImageFiles[idx] = file;`;
+          if (!s.includes(oldBody)) throw new Error('body file anchor not found');
+          s = s.replace(oldBody, newBody);
+
+          const oldBodyUrl = `      state.editor.images[idx].src = el.value;\n      delete state.pendingBodyImageFiles[idx];`;
+          const newBodyUrl = `      const value = el.value.trim();\n      el.setCustomValidity(value && !isValidImageUrl(value) ? "Use a valid http(s) image URL." : "");\n      state.editor.images[idx].src = value;\n      delete state.pendingBodyImageFiles[idx];`;
+          if (!s.includes(oldBodyUrl)) throw new Error('body URL anchor not found');
+          s = s.replace(oldBodyUrl, newBodyUrl);
+
+          const oldStart = `  try {\n    const slug = state.editor.slug.trim();\n    const title = state.editor.title.trim();`;
+          const newStart = `  try {\n    const slug = state.editor.slug.trim();\n    const title = state.editor.title.trim();\n    const uploadedImagePaths = [];`;
+          if (!s.includes(oldStart)) throw new Error('publish start anchor not found');
+          s = s.replace(oldStart, newStart);
+
+          const oldCoverUpload = `      const path = `${IMAGES_DIR}/${slug}-cover.${ext}`;\n      const b64 = await fileToBase64(state.pendingCoverFile);\n      const existing = await ghGetFile(path, { binary: true });\n      await ghPutFile(path, b64, `Admin: upload cover image for "${title}"`, existing ? existing.sha : undefined);\n      state.editor.cover = path;`;
+          const newCoverUpload = `      const candidatePath = `${IMAGES_DIR}/${slug}-cover.${ext}`;\n      const path = uniqueUploadPath(candidatePath, state.editorOriginalId);\n      const b64 = await fileToBase64(state.pendingCoverFile);\n      const existing = await ghGetFile(path, { binary: true });\n      await ghPutFile(path, b64, `Admin: upload cover image for "${title}"`, existing ? existing.sha : undefined);\n      uploadedImagePaths.push(path);\n      state.editor.cover = path;`;
+          if (!s.includes(oldCoverUpload)) throw new Error('cover upload block not found');
+          s = s.replace(oldCoverUpload, newCoverUpload);
+
+          const oldBodyPath = `        const path = `${IMAGES_DIR}/${slug}-${idx + 1}.${ext}`;\n        const b64 = await fileToBase64(file);\n        const existing = await ghGetFile(path, { binary: true });\n        await ghPutFile(path, b64, `Admin: upload image ${idx + 1} for "${title}"`, existing ? existing.sha : undefined);\n        state.editor.images[idx].src = path;`;
+          const newBodyPath = `        const candidatePath = `${IMAGES_DIR}/${slug}-${idx + 1}.${ext}`;\n        const path = uniqueUploadPath(candidatePath, state.editorOriginalId);\n        const b64 = await fileToBase64(file);\n        const existing = await ghGetFile(path, { binary: true });\n        await ghPutFile(path, b64, `Admin: upload image ${idx + 1} for "${title}"`, existing ? existing.sha : undefined);\n        uploadedImagePaths.push(path);\n        state.editor.images[idx].src = path;`;
+          if (!s.includes(oldBodyPath)) throw new Error('body upload block not found');
+          s = s.replace(oldBodyPath, newBodyPath);
+
+          const oldCatch = `  } catch (err) {\n    console.error(err);\n    toast(`Publishing failed. Please try again. (${err.message})`, "error");`;
+          const newCatch = `  } catch (err) {\n    console.error(err);\n    const referenced = new Set();\n    state.articles.forEach(a => {\n      if (a.cover) referenced.add(a.cover);\n      (a.images || []).forEach(img => { const src = typeof img === "string" ? img : img && img.src; if (src) referenced.add(src); });\n    });\n    for (const path of uploadedImagePaths || []) {\n      if (referenced.has(path)) continue;\n      try { const file = await ghGetFile(path, { binary: true }); if (file) await ghDeleteFile(path, file.sha, "Admin: rollback failed image upload"); }\n      catch (cleanupErr) { console.warn("Could not roll back uploaded image", path, cleanupErr); }\n    }\n    toast(`Publishing failed. Please try again. (${err.message})`, "error");`;
+          if (!s.includes(oldCatch)) throw new Error('publish catch anchor not found');
+          s = s.replace(oldCatch, newCatch);
+          fs.writeFileSync(path, s);
+          NODE
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add admin/admin.js
+          git diff --cached --check
+          git commit -m "Harden image upload replace and rollback"
+          git push
