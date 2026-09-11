@@ -1101,7 +1101,22 @@ function renderBodyImages() {
     el.addEventListener("click", () => {
       const idx = +el.dataset.removeImage;
       state.editor.images.splice(idx, 1);
-      delete state.pendingBodyImageFiles[idx];
+
+      // state.pendingBodyImageFiles maps editor array-index -> staged File.
+      // Removing a row shifts every later row down by one, so any staged
+      // file at an index above idx must be re-keyed to idx-1, or a body
+      // image picked for a later row silently stops lining up with its
+      // row (and either gets uploaded to the wrong slot or dropped) once
+      // publishEditorArticle() walks this object by index.
+      const reindexed = {};
+      Object.entries(state.pendingBodyImageFiles).forEach(([key, file]) => {
+        const k = +key;
+        if (k < idx) reindexed[k] = file;
+        else if (k > idx) reindexed[k - 1] = file;
+        // k === idx: that row (and its staged file) was just removed.
+      });
+      state.pendingBodyImageFiles = reindexed;
+
       renderBodyImages();
     });
   });
@@ -1277,18 +1292,10 @@ async function publishEditorArticle() {
       state.editor.cover = path;
     }
 
-    // Upload body images. This also runs BEFORE buildArticleFromEditor()
-    // and writes each uploaded path back onto state.editor.images[idx].src
-    // (using the editor's own indices, which stay aligned with
-    // pendingBodyImageFiles). buildArticleFromEditor() then keeps every
-    // image that ends up with a non-empty src.
-    //
-    // Previously the article object was built first, which immediately
-    // dropped any image whose src was still empty (i.e. every image
-    // added via file upload, since src is cleared to "" the moment a
-    // file is chosen). That silently discarded body/section images
-    // before they were ever uploaded — the root cause of body images
-    // not appearing on the article page.
+    // Upload body images. This runs BEFORE buildArticleFromEditor() and
+    // writes each uploaded file's real GitHub path onto
+    // state.editor.images[idx].src (using the editor's own indices, which
+    // stay aligned with pendingBodyImageFiles).
     for (const [idxStr, file] of Object.entries(state.pendingBodyImageFiles)) {
       const idx = +idxStr;
       if (!state.editor.images[idx]) continue;
@@ -1299,8 +1306,26 @@ async function publishEditorArticle() {
       await ghPutFile(path, b64, `Admin: upload image ${idx + 1} for "${title}"`, existing ? existing.sha : undefined);
       state.editor.images[idx].src = path;
     }
+    // Every staged file has now been uploaded and written back onto
+    // state.editor.images; nothing should still be pending.
+    state.pendingBodyImageFiles = {};
 
     const article = buildArticleFromEditor(true);
+
+    // Explicitly (re)build article.images straight from state.editor.images
+    // rather than trusting buildArticleFromEditor()'s internal filter alone.
+    // This is the exact array that gets written into articles.json, so we
+    // guarantee here — at the last possible point before saving — that any
+    // image with a real src (just-uploaded file, or a manually typed URL)
+    // is included with its src/alt/caption intact, and that article.images
+    // can never silently come back empty while state.editor.images has a
+    // valid uploaded image sitting in it.
+    article.images = (state.editor.images || [])
+      .filter(img => (typeof img === "string" ? img : img && img.src))
+      .map(img => (typeof img === "string"
+        ? { src: img, alt: "", caption: "" }
+        : { src: img.src, alt: img.alt || "", caption: img.caption || "" }));
+
     if (!article.og.image && article.cover) article.og.image = article.cover;
 
     // Merge into the article list
