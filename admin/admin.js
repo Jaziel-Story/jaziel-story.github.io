@@ -1296,15 +1296,32 @@ async function publishEditorArticle() {
     // writes each uploaded file's real GitHub path onto
     // state.editor.images[idx].src (using the editor's own indices, which
     // stay aligned with pendingBodyImageFiles).
-    for (const [idxStr, file] of Object.entries(state.pendingBodyImageFiles)) {
+    const pendingEntries = Object.entries(state.pendingBodyImageFiles);
+    console.log(`[publish] ${pendingEntries.length} staged body image file(s) at publish time:`,
+      pendingEntries.map(([idxStr]) => +idxStr));
+
+    for (const [idxStr, file] of pendingEntries) {
       const idx = +idxStr;
-      if (!state.editor.images[idx]) continue;
-      const ext = safeExt(file.name);
-      const path = `${IMAGES_DIR}/${slug}-${idx + 1}.${ext}`;
-      const b64 = await fileToBase64(file);
-      const existing = await ghGetFile(path, { binary: true });
-      await ghPutFile(path, b64, `Admin: upload image ${idx + 1} for "${title}"`, existing ? existing.sha : undefined);
-      state.editor.images[idx].src = path;
+      if (!state.editor.images[idx]) {
+        console.warn(`[publish] pendingBodyImageFiles had a file for index ${idx}, but state.editor.images[${idx}] does not exist — skipping (index likely went stale after an image row was removed before publishing).`);
+        continue;
+      }
+      try {
+        const ext = safeExt(file.name);
+        const path = `${IMAGES_DIR}/${slug}-${idx + 1}.${ext}`;
+        const b64 = await fileToBase64(file);
+        const existing = await ghGetFile(path, { binary: true });
+        await ghPutFile(path, b64, `Admin: upload image ${idx + 1} for "${title}"`, existing ? existing.sha : undefined);
+        state.editor.images[idx].src = path;
+        console.log(`[publish] body image ${idx} uploaded ->`, path);
+      } catch (imgErr) {
+        // Re-throw with a specific message so this failure is distinguishable
+        // from a cover-upload or articles.json-save failure in the toast, and
+        // so it's obvious in the console which image and which GitHub call
+        // failed instead of the publish just silently leaving articles.json
+        // unchanged with images: [].
+        throw new Error(`Body image ${idx + 1} upload failed: ${imgErr.message}`);
+      }
     }
     // Every staged file has now been uploaded and written back onto
     // state.editor.images; nothing should still be pending.
@@ -1325,6 +1342,7 @@ async function publishEditorArticle() {
       .map(img => (typeof img === "string"
         ? { src: img, alt: "", caption: "" }
         : { src: img.src, alt: img.alt || "", caption: img.caption || "" }));
+    console.log(`[publish] article.images about to be saved (${article.images.length}):`, article.images);
 
     if (!article.og.image && article.cover) article.og.image = article.cover;
 
