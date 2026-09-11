@@ -22,13 +22,24 @@ jobs:
           node <<'NODE'
           const fs = require('fs');
           const { execSync } = require('child_process');
-          const esc = v => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+          const esc = v => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
           const site = 'https://jaziel-story.github.io/';
           const rel = p => /^https?:\/\//i.test(p||'') ? p : `../${String(p||'').replace(/^\/+/, '')}`;
           const abs = p => /^https?:\/\//i.test(p||'') ? p : new URL(String(p||'').replace(/^\/+/, ''), site).href;
           const img = x => { const s=typeof x==='string'?x:x?.src; if(!s)return ''; const a=typeof x==='object'?(x.alt||''):''; const c=typeof x==='object'?(x.caption||''):''; return `<figure class="article-figure"><img src="${esc(rel(s))}" alt="${esc(a)}" loading="lazy" decoding="async">${c?`<figcaption>${esc(c)}</figcaption>`:''}</figure>`; };
           const data = JSON.parse(fs.readFileSync('articles.json','utf8'));
           fs.mkdirSync('articles',{recursive:true});
+
+          // Remove generated static pages that no longer correspond to an
+          // article in articles.json. This prevents deleted or renamed
+          // articles from remaining publicly accessible at stale URLs.
+          const validSlugs = new Set((data.articles||[]).map(a => a && a.slug).filter(Boolean));
+          for (const name of fs.readdirSync('articles')) {
+            if (name.endsWith('.html') && !validSlugs.has(name.slice(0, -5))) {
+              fs.unlinkSync(`articles/${name}`);
+            }
+          }
+
           for (const a of (data.articles||[])) {
             let body=a.intro?`<p>${esc(a.intro)}</p>`:''; let ii=0;
             for (const s of (a.sections||[])) { if(s.heading)body+=`<h2>${esc(s.heading)}</h2>`; body+=(s.paragraphs||[]).map(p=>`<p>${esc(p)}</p>`).join(''); if(a.images?.[ii])body+=img(a.images[ii++]); }
@@ -55,5 +66,5 @@ jobs:
           let main=fs.readFileSync('assets/js/main.js','utf8'); main=main.replace(/return `article\.html\?slug=\$\{encodeURIComponent\(article\.slug\)\}`;/, 'return `articles/${encodeURIComponent(article.slug)}.html`;'); fs.writeFileSync('assets/js/main.js',main);
           execSync('git config user.name "github-actions[bot]"'); execSync('git config user.email "41898282+github-actions[bot]@users.noreply.github.com"');
           execSync('git add articles assets/js/main.js assets/js/link-fix.js index.html search.html category.html article.html');
-          try { execSync('git commit -m "Generate static article pages for social previews"'); execSync('git push'); } catch(e) { if(!String(e.stderr||'').includes('nothing to commit')) throw e; }
+          try { execSync('git commit -m "Fix stale static article pages"'); execSync('git push'); } catch(e) { if(!String(e.stderr||'').includes('nothing to commit')) throw e; }
           NODE
