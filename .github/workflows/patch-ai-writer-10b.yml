@@ -1,0 +1,41 @@
+name: Patch AI Writer 10b
+on:
+  push:
+    paths:
+      - .github/trigger-ai-writer-10b
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch and validate
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          function patch(path, test, replacer) {
+            const s = fs.readFileSync(path, 'utf8');
+            if (test(s)) return false;
+            const out = replacer(s);
+            if (out === s) throw new Error('Patch made no change: ' + path);
+            fs.writeFileSync(path, out);
+            return true;
+          }
+          patch('.github/scripts/generate-article.mjs', s => s.includes('"category": string'), s => s.replace(/(  "title": string,\n)/, '$1  "category": string (the article category; use the Category hint exactly when provided),\n'));
+          patch('.github/scripts/generate-article.mjs', s => /\n\s*category: \{ type: "string" \ },/.test(s), s => s.replace(/(\n\s*title: \{ type: "string" \ },\n)/, '$1    category: { type: "string" },\n'));
+          patch('.github/scripts/generate-article.mjs', s => s.includes('"title", "category", "description"'), s => s.replace(/required: \["title", "description",/, 'required: ["title", "category", "description",'));
+          patch('.github/scripts/generate-article.mjs', s => s.includes('requireString("category")'), s => s.replace(/(requireString\("title"\);\n)/, '$1  requireString("category");\n'));
+          patch('.github/scripts/generate-article.mjs', s => s.includes('The output category is mandatory'), s => s.replace(/(- Keep the tone natural,[^\n]*\n)/, '$1- The output category is mandatory. If a Category hint is provided, use that exact value. If no hint is provided, infer one concise category from the raw article.\n'));
+          patch('admin/admin.js', s => s.includes('data.category) $("#inCategory")'), s => s.replace(/(if \(data\.description\) \$\("#inDescription"\)\.value = e\.description = data\.description;\n)/, '  if (data.category) $("#inCategory").value = e.category = data.category;\n$1'));
+          const files = ['.github/scripts/generate-article.mjs','admin/admin.js'];
+          for (const f of files) { const s = fs.readFileSync(f,'utf8'); if (!s.includes('category')) throw new Error('Category missing from '+f); }
+          console.log('Patched AI Writer category end-to-end.');
+          NODE
+          node --check .github/scripts/generate-article.mjs
+          node --check admin/admin.js
+          git diff --check
+          git config user.name "jaziel-ai-writer[bot]"
+          git config user.email "actions@users.noreply.github.com"
+          git add .github/scripts/generate-article.mjs admin/admin.js
+          if git diff --cached --quiet; then echo 'No changes required.'; else git commit -m 'Fix AI Writer category end-to-end'; git push; fi
