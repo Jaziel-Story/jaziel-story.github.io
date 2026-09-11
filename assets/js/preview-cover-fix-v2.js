@@ -1,5 +1,5 @@
 /* =========================================================
-   NEW ARTICLE PREVIEW MEDIA V3
+   NEW ARTICLE PREVIEW MEDIA V4
 
    Covers and body image files are browser-local until Publish.
    The normal article renderer can render stored GitHub paths and
@@ -8,6 +8,11 @@
 
    This helper patches only the visual Preview. It does not modify
    state.editor, articles.json, or Article Schema v1.
+
+   V4 also hardens the Preview against a missing-section DOM result:
+   the editor form is the source of truth for the section list, so any
+   section that is present in the editor but absent from the rendered
+   preview is restored before staged body images are placed.
    ========================================================= */
 
 (() => {
@@ -56,6 +61,104 @@
     return url ? resolveMediaUrl(url) : "";
   }
 
+  function getEditorSectionRows() {
+    return [...document.querySelectorAll("#sectionsList .repeat-item[data-idx]")]
+      .map((row, position) => {
+        const headingInput = row.querySelector(`[data-section-heading="${position}"]`)
+          || row.querySelector("[data-section-heading]");
+        const paragraphsInput = row.querySelector(`[data-section-paragraphs="${position}"]`)
+          || row.querySelector("[data-section-paragraphs]");
+
+        const heading = headingInput?.value?.trim() || "";
+        const paragraphs = (paragraphsInput?.value || "")
+          .split("\n")
+          .map(p => p.trim())
+          .filter(Boolean);
+
+        return { index: position, heading, paragraphs };
+      })
+      .filter(section => section.heading || section.paragraphs.length);
+  }
+
+  function makeSectionNodes(section) {
+    const nodes = [];
+
+    if (section.heading) {
+      const h2 = document.createElement("h2");
+      h2.textContent = section.heading;
+      h2.dataset.previewSectionIndex = String(section.index);
+      nodes.push(h2);
+    }
+
+    section.paragraphs.forEach(text => {
+      const p = document.createElement("p");
+      p.textContent = text;
+      p.dataset.previewSectionIndex = String(section.index);
+      nodes.push(p);
+    });
+
+    return nodes;
+  }
+
+  function patchMissingSections() {
+    const root = document.querySelector("#previewRoot");
+    const body = root?.querySelector(".article-body");
+    if (!body) return;
+
+    const sections = getEditorSectionRows();
+    if (!sections.length) return;
+
+    // The normal preview should already contain every section. If it does,
+    // leave it untouched so we do not duplicate anything.
+    const renderedHeadings = body.querySelectorAll("h2").length;
+    const renderedSectionMarkers = body.querySelectorAll("[data-preview-section-index]").length;
+    const expectedHeadingCount = sections.filter(s => s.heading).length;
+
+    if (renderedHeadings >= expectedHeadingCount && renderedSectionMarkers >= renderedHeadings) {
+      return;
+    }
+
+    // Rebuild the section content in one deterministic block. The intro is
+    // the first unmarked paragraph; everything after the section block
+    // (stored images, verse, closing, tags) stays in place.
+    const sectionNodes = [];
+    sections.forEach(section => sectionNodes.push(...makeSectionNodes(section)));
+
+    const firstSectionBoundary = body.querySelector("h2, .article-figure, .verse-block, .article-closing");
+    if (!firstSectionBoundary) {
+      sectionNodes.forEach(node => body.appendChild(node));
+      return;
+    }
+
+    // Remove only the existing section headings/paragraphs that are part of
+    // the normal renderer. Keep the intro paragraph, images, verse and
+    // closing intact.
+    const intro = [...body.children].find(el =>
+      el.tagName === "P" &&
+      !el.classList.contains("article-closing") &&
+      !el.closest(".article-figure") &&
+      !el.classList.contains("verse-block")
+    );
+
+    [...body.querySelectorAll("h2")].forEach(el => el.remove());
+
+    // Remove section paragraphs while preserving the intro. We identify the
+    // section block by position: all paragraphs before the first figure,
+    // verse or closing, except the first intro paragraph, belong to sections.
+    const stop = body.querySelector(".article-figure, .verse-block, .article-closing");
+    const children = [...body.children];
+    children.forEach(el => {
+      if (el === intro || el === stop) return;
+      if (el.tagName === "P") el.remove();
+    });
+
+    const insertionPoint = body.querySelector(".article-figure, .verse-block, .article-closing") || null;
+    sectionNodes.forEach(node => {
+      if (insertionPoint) body.insertBefore(node, insertionPoint);
+      else body.appendChild(node);
+    });
+  }
+
   function getStagedBodyRows() {
     return [...document.querySelectorAll("#bodyImagesList [data-image-file]")]
       .map(fileInput => {
@@ -70,7 +173,8 @@
           caption: captionInput?.value?.trim() || ""
         };
       })
-      .filter(item => item.file);
+      .filter(item => item.file)
+      .sort((a, b) => a.idx - b.idx);
   }
 
   function makeBodyFigure(item) {
@@ -136,7 +240,9 @@
 
       // Body image #1 follows Section 1, #2 follows Section 2, etc.
       if (!heading) {
-        body.appendChild(figure);
+        const closing = body.querySelector(".article-closing");
+        if (closing) body.insertBefore(figure, closing);
+        else body.appendChild(figure);
         return;
       }
 
@@ -155,6 +261,7 @@
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         patchCover();
+        patchMissingSections();
         patchBodyImages();
       });
     });
