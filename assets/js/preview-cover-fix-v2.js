@@ -1,18 +1,18 @@
 /* =========================================================
-   NEW ARTICLE PREVIEW COVER V2
+   NEW ARTICLE PREVIEW MEDIA V3
 
-   A newly selected cover is a browser File until Publish uploads it.
-   The normal article renderer can render stored covers, but New Article
-   needs a temporary object URL before publication.
+   Covers and body image files are browser-local until Publish.
+   The normal article renderer can render stored GitHub paths, but a
+   New Article needs temporary object URLs before publication.
 
-   This helper only patches the visual Preview. It does not modify
-   state.editor.cover, articles.json, or Article Schema v1.
+   This helper patches only the visual Preview. It does not modify
+   state.editor, articles.json, or Article Schema v1.
    ========================================================= */
 
 (() => {
   "use strict";
 
-  const resolveCoverUrl = value => {
+  const resolveMediaUrl = value => {
     const raw = String(value || "").trim();
     if (!raw) return "";
     if (/^(?:https?:|data:|blob:)/i.test(raw)) return raw;
@@ -24,15 +24,19 @@
   };
 
   if (typeof window.coverUrlFor !== "function") {
-    window.coverUrlFor = resolveCoverUrl;
+    window.coverUrlFor = resolveMediaUrl;
   }
 
-  let activeObjectUrl = "";
+  let activeCoverObjectUrl = "";
+  const activeBodyObjectUrls = [];
 
-  function revokeObjectUrl() {
-    if (activeObjectUrl) {
-      URL.revokeObjectURL(activeObjectUrl);
-      activeObjectUrl = "";
+  function revokeObjectUrls() {
+    if (activeCoverObjectUrl) {
+      try { URL.revokeObjectURL(activeCoverObjectUrl); } catch {}
+      activeCoverObjectUrl = "";
+    }
+    while (activeBodyObjectUrls.length) {
+      try { URL.revokeObjectURL(activeBodyObjectUrls.pop()); } catch {}
     }
   }
 
@@ -40,16 +44,64 @@
     const fileInput = document.querySelector("#coverFile");
     const file = fileInput?.files?.[0];
     if (file) {
-      revokeObjectUrl();
-      activeObjectUrl = URL.createObjectURL(file);
-      return activeObjectUrl;
+      if (activeCoverObjectUrl) {
+        try { URL.revokeObjectURL(activeCoverObjectUrl); } catch {}
+      }
+      activeCoverObjectUrl = URL.createObjectURL(file);
+      return activeCoverObjectUrl;
     }
 
     const url = document.querySelector("#inCoverUrl")?.value?.trim() || "";
-    return url ? resolveCoverUrl(url) : "";
+    return url ? resolveMediaUrl(url) : "";
   }
 
-  function patchNewArticlePreview() {
+  function getBodyRows() {
+    return [...document.querySelectorAll("#bodyImagesList [data-image-file]")]
+      .map(fileInput => {
+        const idx = Number(fileInput.dataset.imageFile);
+        const file = fileInput.files?.[0] || null;
+        const urlInput = document.querySelector(`#bodyImagesList [data-image-url="${idx}"]`);
+        const altInput = document.querySelector(`#bodyImagesList [data-image-alt="${idx}"]`);
+        const captionInput = document.querySelector(`#bodyImagesList [data-image-caption="${idx}"]`);
+        return {
+          idx,
+          file,
+          url: urlInput?.value?.trim() || "",
+          alt: altInput?.value?.trim() || "",
+          caption: captionInput?.value?.trim() || ""
+        };
+      });
+  }
+
+  function makeBodyFigure(item) {
+    let src = item.url;
+    if (item.file) {
+      const objectUrl = URL.createObjectURL(item.file);
+      activeBodyObjectUrls.push(objectUrl);
+      src = objectUrl;
+    }
+    if (!src) return null;
+
+    const figure = document.createElement("figure");
+    figure.className = "article-figure preview-staged-body-image";
+    figure.dataset.previewBodyImageIndex = String(item.idx);
+
+    const img = document.createElement("img");
+    img.src = resolveMediaUrl(src);
+    img.alt = item.alt || "Article image";
+    img.loading = "eager";
+    figure.appendChild(img);
+
+    if (item.caption) {
+      const caption = document.createElement("figcaption");
+      caption.textContent = item.caption;
+      figure.appendChild(caption);
+    }
+
+    return figure;
+  }
+
+  function patchCover() {
     const root = document.querySelector("#previewRoot");
     const article = root?.querySelector(".article");
     if (!article) return;
@@ -61,7 +113,7 @@
     if (!src) return;
 
     const cover = document.createElement("div");
-    cover.className = "article-cover";
+    cover.className = "article-cover preview-staged-cover";
 
     const img = document.createElement("img");
     img.src = src;
@@ -72,17 +124,56 @@
     article.insertBefore(cover, article.firstChild);
   }
 
-  function afterPreviewClick() {
-    // The Admin Preview handler is registered on a dynamically-created
-    // button. Delegation below fires after that handler; two animation
-    // frames ensure the modal DOM has been rendered before patching it.
-    requestAnimationFrame(() => {
-      requestAnimationFrame(patchNewArticlePreview);
+  function patchBodyImages() {
+    const root = document.querySelector("#previewRoot");
+    const body = root?.querySelector(".article-body");
+    if (!body) return;
+
+    const rows = getBodyRows().filter(item => item.file || item.url);
+    if (!rows.length) return;
+
+    const headings = [...body.querySelectorAll("h2")];
+    rows.forEach((item, position) => {
+      if (body.querySelector(`[data-preview-body-image-index="${item.idx}"]`)) return;
+
+      const figure = makeBodyFigure(item);
+      if (!figure) return;
+
+      // Body image #1 follows Section 1, #2 follows Section 2, etc.
+      const heading = headings[position];
+      if (!heading) {
+        body.appendChild(figure);
+        return;
+      }
+
+      const nextHeading = headings[position + 1];
+      if (nextHeading) {
+        body.insertBefore(figure, nextHeading);
+      } else {
+        const closing = body.querySelector(".article-closing");
+        if (closing) body.insertBefore(figure, closing);
+        else body.appendChild(figure);
+      }
     });
   }
 
+  function patchPreview() {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        patchCover();
+        patchBodyImages();
+      });
+    });
+  }
+
+  // Capture phase is intentional: the Admin Preview button handler is
+  // registered by admin.js, while this helper loads afterward. We only
+  // schedule the DOM patch; the normal Preview renderer still runs first.
   document.addEventListener("click", event => {
-    if (event.target?.closest?.("#btnPreview")) afterPreviewClick();
-    if (event.target?.closest?.("#previewClose")) revokeObjectUrl();
-  });
+    if (event.target?.closest?.("#btnPreview")) {
+      revokeObjectUrls();
+      patchPreview();
+    }
+    if (event.target?.closest?.("#previewClose")) revokeObjectUrls();
+  }, true);
 })();
