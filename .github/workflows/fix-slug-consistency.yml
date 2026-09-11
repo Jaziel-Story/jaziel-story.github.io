@@ -1,0 +1,58 @@
+name: Fix Jaziel slug consistency
+
+on:
+  push:
+    paths:
+      - ".github/workflows/fix-slug-consistency.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply slug stability and canonical fixes
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const { execSync } = require('child_process');
+
+          const adminPath = 'admin/admin.js';
+          let admin = fs.readFileSync(adminPath, 'utf8');
+
+          const oldSlugCondition = 'if (state.editorMode === "new" || !state.editor._slugManuallyEdited) {';
+          const newSlugCondition = 'if (state.editorMode === "new" && !state.editor._slugManuallyEdited) {';
+          if (!admin.includes(oldSlugCondition)) throw new Error('Slug auto-generation anchor not found.');
+          admin = admin.replace(oldSlugCondition, newSlugCondition);
+
+          const oldValidation = '  else if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(e.slug)) errors.slug = "Slug must be lowercase letters, numbers, and hyphens only.";';
+          const newValidation = '  else if (e.slug === "new") errors.slug = "The slug \\"new\\" is reserved for the new-article editor route.";\n  else if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(e.slug)) errors.slug = "Slug must be lowercase letters, numbers, and hyphens only.";';
+          if (!admin.includes(oldValidation)) throw new Error('Slug validation anchor not found.');
+          admin = admin.replace(oldValidation, newValidation);
+
+          const oldHint = 'Canonical URL is generated automatically as <code>${escapeHTML(state.settings.siteUrl)}article.html?slug=…</code>';
+          const newHint = 'Canonical URL is generated automatically as <code>${escapeHTML(state.settings.siteUrl)}articles/&lt;slug&gt;.html</code>';
+          if (!admin.includes(oldHint)) throw new Error('Canonical hint anchor not found.');
+          admin = admin.replace(oldHint, newHint);
+
+          fs.writeFileSync(adminPath, admin);
+
+          const mainPath = 'assets/js/main.js';
+          let main = fs.readFileSync(mainPath, 'utf8');
+          const oldCanonical = '  const url = `${window.location.origin}${window.location.pathname}?slug=${encodeURIComponent(article.slug || "")}`;';
+          const newCanonical = '  const url = `${window.location.origin}/articles/${encodeURIComponent(article.slug || "")}.html`;';
+          if (!main.includes(oldCanonical)) throw new Error('Dynamic canonical URL anchor not found.');
+          main = main.replace(oldCanonical, newCanonical);
+          fs.writeFileSync(mainPath, main);
+
+          execSync('git config user.name "github-actions[bot]"');
+          execSync('git config user.email "41898282+github-actions[bot]@users.noreply.github.com"');
+          execSync('git add admin/admin.js assets/js/main.js');
+          execSync('git commit -m "Fix slug stability and canonical URLs"');
+          execSync('git push');
+          NODE
