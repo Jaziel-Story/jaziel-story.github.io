@@ -1,0 +1,70 @@
+name: Patch AI Writer 10
+on:
+  push:
+    paths:
+      - .github/trigger-ai-writer-10
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch AI Writer safely
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          function replaceOnce(path, oldText, newText) {
+            const s = fs.readFileSync(path, 'utf8');
+            if (!s.includes(oldText)) throw new Error(`Pattern not found in ${path}: ${oldText.slice(0,120)}`);
+            const out = s.replace(oldText, newText);
+            if (out === s) throw new Error(`No change made to ${path}`);
+            fs.writeFileSync(path, out);
+          }
+
+          const p = '.github/scripts/generate-article.mjs';
+          replaceOnce(p,
+`  "title": string,\n  "description": string (one sentence, under 160 characters),`,
+`  "title": string,\n  "category": string (the article category; if a Category hint is provided, use it exactly),\n  "description": string (one sentence, under 160 characters),`);
+          replaceOnce(p,
+`Category: ${categoryHint ? categoryHint : ""}`,
+`Category: ${categoryHint ? categoryHint : ""}`);
+          replaceOnce(p,
+`  "title": { type: "string" },\n    description: { type: "string" },`,
+`  title: { type: "string" },\n    category: { type: "string" },\n    description: { type: "string" },`);
+          replaceOnce(p,
+`  required: ["title", "description", "dek", "intro", "sections", "closing", "tags", "seoTitle", "seoDescription"]`,
+`  required: ["title", "category", "description", "dek", "intro", "sections", "closing", "tags", "seoTitle", "seoDescription"]`);
+          replaceOnce(p,
+`  requireString("title");\n  requireString("description");`,
+`  requireString("title");\n  requireString("category");\n  requireString("description");`);
+          replaceOnce(p,
+`  const { rawText, titleHint, categoryHint, instructions } = request;`,
+`  const { rawText, titleHint, categoryHint, instructions } = request;`);
+          replaceOnce(p,
+`- Keep the tone natural, readable, and engaging for a mobile-friendly trending-stories site — not clickbait, not a raw AI-sounding wall of text.`,
+`- Keep the tone natural, readable, and engaging for a mobile-friendly trending-stories site — not clickbait, not a raw AI-sounding wall of text.\n- The output category is mandatory. If a Category hint is provided, use that exact value as the category. If no hint is provided, infer one concise category from the raw article.`);
+
+          const a = 'admin/admin.js';
+          replaceOnce(a,
+`  if (data.description) $("#inDescription").value = e.description = data.description;`,
+`  if (data.category) $("#inCategory").value = e.category = data.category;\n  if (data.description) $("#inDescription").value = e.description = data.description;`);
+
+          replaceOnce(a,
+`  if (data.title) $("#inTitle").value = e.title = e.title || data.title;`,
+`  if (data.title) {\n    $("#inTitle").value = e.title = e.title || data.title;\n    if (state.editorMode === "new" && !e._slugManuallyEdited) {\n      e.slug = slugify(e.title);\n      $("#inSlug").value = e.slug;\n    }\n  }`);
+
+          console.log('AI Writer patch applied successfully.');
+          NODE
+
+          node --check .github/scripts/generate-article.mjs
+          node --check admin/admin.js
+          grep -q 'category: { type: "string" }' .github/scripts/generate-article.mjs
+          grep -q 'data.category' admin/admin.js
+          grep -q '"category"' .github/scripts/generate-article.mjs
+          git diff --check
+          git config user.name "jaziel-ai-writer[bot]"
+          git config user.email "actions@users.noreply.github.com"
+          git add .github/scripts/generate-article.mjs admin/admin.js
+          git commit -m "Fix AI Writer category mapping and validation"
+          git push
