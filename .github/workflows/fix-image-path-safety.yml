@@ -1,0 +1,36 @@
+name: Fix image path safety
+
+on:
+  push:
+    branches:
+      - audit-images-9
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prevent image overwrites
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'admin/admin.js';
+          let s = fs.readFileSync(path, 'utf8');
+          const oldText = 'function imagePathUsedByOtherArticle(path, currentArticleId) {\n  return state.articles.some(article => {\n    if (!article || article.id === currentArticleId) return false;\n    if (article.cover === path) return true;\n    return (article.images || []).some(img => (typeof img === "string" ? img : img && img.src) === path);\n  });\n}\nfunction uniqueUploadPath(basePath, currentArticleId) {\n  if (!imagePathUsedByOtherArticle(basePath, currentArticleId)) return basePath;';
+          const newText = 'function imagePathUsedByAnyArticle(path) {\n  return state.articles.some(article => {\n    if (!article) return false;\n    if (article.cover === path) return true;\n    return (article.images || []).some(img => (typeof img === "string" ? img : img && img.src) === path);\n  });\n}\nfunction uniqueUploadPath(basePath) {\n  if (!imagePathUsedByAnyArticle(basePath)) return basePath;';
+          if (!s.includes(oldText)) throw new Error('image path helper anchor not found');
+          s = s.replace(oldText, newText);
+          s = s.replace('uniqueUploadPath(candidatePath, state.editorOriginalId)', 'uniqueUploadPath(candidatePath)');
+          fs.writeFileSync(path, s);
+          NODE
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add admin/admin.js
+          git diff --cached --check
+          git commit -m "Avoid overwriting referenced images"
+          git push
