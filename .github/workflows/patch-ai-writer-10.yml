@@ -16,55 +16,67 @@ jobs:
           const fs = require('fs');
           function replaceOnce(path, oldText, newText) {
             const s = fs.readFileSync(path, 'utf8');
-            if (!s.includes(oldText)) throw new Error(`Pattern not found in ${path}: ${oldText.slice(0,120)}`);
-            const out = s.replace(oldText, newText);
-            if (out === s) throw new Error(`No change made to ${path}`);
-            fs.writeFileSync(path, out);
+            if (!s.includes(oldText)) throw new Error(`Pattern not found in ${path}: ${oldText.slice(0,100)}`);
+            fs.writeFileSync(path, s.replace(oldText, newText));
           }
 
           const p = '.github/scripts/generate-article.mjs';
-          replaceOnce(p,
+          let s = fs.readFileSync(p, 'utf8');
+          if (!s.includes('"category": string (the article category')) {
+            replaceOnce(p,
 `  "title": string,\n  "description": string (one sentence, under 160 characters),`,
 `  "title": string,\n  "category": string (the article category; if a Category hint is provided, use it exactly),\n  "description": string (one sentence, under 160 characters),`);
-          replaceOnce(p,
-`Category: ${categoryHint ? categoryHint : ""}`,
-`Category: ${categoryHint ? categoryHint : ""}`);
-          replaceOnce(p,
-`  "title": { type: "string" },\n    description: { type: "string" },`,
-`  title: { type: "string" },\n    category: { type: "string" },\n    description: { type: "string" },`);
-          replaceOnce(p,
+          }
+          s = fs.readFileSync(p, 'utf8');
+          if (!s.includes('category: { type: "string" }')) {
+            replaceOnce(p,
+`    title: { type: "string" },\n    description: { type: "string" },`,
+`    title: { type: "string" },\n    category: { type: "string" },\n    description: { type: "string" },`);
+          }
+          s = fs.readFileSync(p, 'utf8');
+          if (!s.includes('"title", "category", "description"')) {
+            replaceOnce(p,
 `  required: ["title", "description", "dek", "intro", "sections", "closing", "tags", "seoTitle", "seoDescription"]`,
 `  required: ["title", "category", "description", "dek", "intro", "sections", "closing", "tags", "seoTitle", "seoDescription"]`);
-          replaceOnce(p,
+          }
+          s = fs.readFileSync(p, 'utf8');
+          if (!s.includes('requireString("category")')) {
+            replaceOnce(p,
 `  requireString("title");\n  requireString("description");`,
 `  requireString("title");\n  requireString("category");\n  requireString("description");`);
-          replaceOnce(p,
-`  const { rawText, titleHint, categoryHint, instructions } = request;`,
-`  const { rawText, titleHint, categoryHint, instructions } = request;`);
-          replaceOnce(p,
+          }
+          s = fs.readFileSync(p, 'utf8');
+          if (!s.includes('The output category is mandatory')) {
+            replaceOnce(p,
 `- Keep the tone natural, readable, and engaging for a mobile-friendly trending-stories site — not clickbait, not a raw AI-sounding wall of text.`,
 `- Keep the tone natural, readable, and engaging for a mobile-friendly trending-stories site — not clickbait, not a raw AI-sounding wall of text.\n- The output category is mandatory. If a Category hint is provided, use that exact value as the category. If no hint is provided, infer one concise category from the raw article.`);
+          }
 
           const a = 'admin/admin.js';
-          replaceOnce(a,
+          let admin = fs.readFileSync(a, 'utf8');
+          if (!admin.includes('if (data.category) $("#inCategory").value = e.category = data.category;')) {
+            replaceOnce(a,
 `  if (data.description) $("#inDescription").value = e.description = data.description;`,
 `  if (data.category) $("#inCategory").value = e.category = data.category;\n  if (data.description) $("#inDescription").value = e.description = data.description;`);
+          }
 
-          replaceOnce(a,
-`  if (data.title) $("#inTitle").value = e.title = e.title || data.title;`,
-`  if (data.title) {\n    $("#inTitle").value = e.title = e.title || data.title;\n    if (state.editorMode === "new" && !e._slugManuallyEdited) {\n      e.slug = slugify(e.title);\n      $("#inSlug").value = e.slug;\n    }\n  }`);
-
-          console.log('AI Writer patch applied successfully.');
+          // Category is the critical fix. The title/slugs are intentionally left
+          // to the existing slug-stability logic; AI only fills a slug for a new
+          // article when the existing code says it is safe to do so.
+          console.log('AI Writer patch applied.');
           NODE
-
           node --check .github/scripts/generate-article.mjs
           node --check admin/admin.js
           grep -q 'category: { type: "string" }' .github/scripts/generate-article.mjs
-          grep -q 'data.category' admin/admin.js
-          grep -q '"category"' .github/scripts/generate-article.mjs
+          grep -q 'requireString("category")' .github/scripts/generate-article.mjs
+          grep -q 'if (data.category)' admin/admin.js
           git diff --check
           git config user.name "jaziel-ai-writer[bot]"
           git config user.email "actions@users.noreply.github.com"
           git add .github/scripts/generate-article.mjs admin/admin.js
-          git commit -m "Fix AI Writer category mapping and validation"
-          git push
+          if git diff --cached --quiet; then
+            echo "No source changes needed."
+          else
+            git commit -m "Fix AI Writer category mapping and validation"
+            git push
+          fi
