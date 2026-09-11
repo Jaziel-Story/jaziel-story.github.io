@@ -1451,6 +1451,22 @@ function applyAIResultToEditor(data) {
   if (data.seoTitle) $("#inSeoTitle").value = e.seo.title = data.seoTitle;
   if (data.seoDescription) $("#inSeoDesc").value = e.seo.description = data.seoDescription;
 
+  // Automatically keep Open Graph metadata in sync with the AI-generated
+  // SEO metadata. Only fill empty OG fields so a manually entered value
+  // is never overwritten.
+  if (!e.og.title) {
+    e.og.title = e.seo.title || e.title || "";
+    $("#inOgTitle").value = e.og.title;
+  }
+  if (!e.og.description) {
+    e.og.description = e.seo.description || e.description || "";
+    $("#inOgDesc").value = e.og.description;
+  }
+  if (!e.og.image && e.cover) {
+    e.og.image = e.cover;
+    $("#inOgImage").value = e.og.image;
+  }
+
   // Read time is computed deterministically by the workflow from the
   // generated content's length — only fill it in if the admin hasn't
   // already typed one in manually.
