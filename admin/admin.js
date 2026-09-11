@@ -1327,6 +1327,10 @@ async function publishEditorArticle() {
     // state.editor.images; nothing should still be pending.
     state.pendingBodyImageFiles = {};
 
+    const previousArticle = state.editorMode === "edit"
+      ? state.articles.find(a => a.id === state.editorOriginalId)
+      : null;
+
     const article = buildArticleFromEditor(true);
 
     // Explicitly (re)build article.images straight from state.editor.images
@@ -1355,6 +1359,11 @@ async function publishEditorArticle() {
     }
 
     await saveArticlesArray(nextArticles, `Admin: ${state.editorMode === "new" ? "publish" : "update"} article "${article.title}"`);
+
+    // CRUD cleanup: remove replaced images after an edit
+    if (previousArticle) {
+      await removeOrphanedImages(previousArticle, nextArticles);
+    }
 
     clearDraft();
     toast("Published. It may take up to a minute to appear on GitHub Pages.", "success");
