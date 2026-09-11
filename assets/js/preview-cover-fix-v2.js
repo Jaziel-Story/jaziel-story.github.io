@@ -2,8 +2,9 @@
    NEW ARTICLE PREVIEW MEDIA V3
 
    Covers and body image files are browser-local until Publish.
-   The normal article renderer can render stored GitHub paths, but a
-   New Article needs temporary object URLs before publication.
+   The normal article renderer can render stored GitHub paths and
+   manually entered image URLs. New local files need temporary object
+   URLs before publication.
 
    This helper patches only the visual Preview. It does not modify
    state.editor, articles.json, or Article Schema v1.
@@ -55,39 +56,33 @@
     return url ? resolveMediaUrl(url) : "";
   }
 
-  function getBodyRows() {
+  function getStagedBodyRows() {
     return [...document.querySelectorAll("#bodyImagesList [data-image-file]")]
       .map(fileInput => {
         const idx = Number(fileInput.dataset.imageFile);
         const file = fileInput.files?.[0] || null;
-        const urlInput = document.querySelector(`#bodyImagesList [data-image-url="${idx}"]`);
         const altInput = document.querySelector(`#bodyImagesList [data-image-alt="${idx}"]`);
         const captionInput = document.querySelector(`#bodyImagesList [data-image-caption="${idx}"]`);
         return {
           idx,
           file,
-          url: urlInput?.value?.trim() || "",
           alt: altInput?.value?.trim() || "",
           caption: captionInput?.value?.trim() || ""
         };
-      });
+      })
+      .filter(item => item.file);
   }
 
   function makeBodyFigure(item) {
-    let src = item.url;
-    if (item.file) {
-      const objectUrl = URL.createObjectURL(item.file);
-      activeBodyObjectUrls.push(objectUrl);
-      src = objectUrl;
-    }
-    if (!src) return null;
+    const objectUrl = URL.createObjectURL(item.file);
+    activeBodyObjectUrls.push(objectUrl);
 
     const figure = document.createElement("figure");
     figure.className = "article-figure preview-staged-body-image";
     figure.dataset.previewBodyImageIndex = String(item.idx);
 
     const img = document.createElement("img");
-    img.src = resolveMediaUrl(src);
+    img.src = objectUrl;
     img.alt = item.alt || "Article image";
     img.loading = "eager";
     figure.appendChild(img);
@@ -129,7 +124,7 @@
     const body = root?.querySelector(".article-body");
     if (!body) return;
 
-    const rows = getBodyRows().filter(item => item.file || item.url);
+    const rows = getStagedBodyRows();
     if (!rows.length) return;
 
     const headings = [...body.querySelectorAll("h2")];
@@ -137,10 +132,9 @@
       if (body.querySelector(`[data-preview-body-image-index="${item.idx}"]`)) return;
 
       const figure = makeBodyFigure(item);
-      if (!figure) return;
+      const heading = headings[position];
 
       // Body image #1 follows Section 1, #2 follows Section 2, etc.
-      const heading = headings[position];
       if (!heading) {
         body.appendChild(figure);
         return;
