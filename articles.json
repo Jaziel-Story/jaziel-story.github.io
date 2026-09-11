@@ -1,46 +1,6 @@
 {
   "articles": [
     {
-      "id": "story-001",
-      "title": "The Stories Everyone Is Talking About Today",
-      "slug": "the-stories-everyone-is-talking-about-today",
-      "description": "Discover the latest moments, trends and remarkable stories making waves around the world.",
-      "category": "World",
-      "date": "2026-09-11",
-      "readTime": "5 min read",
-      "dek": "A quick look at the stories attracting attention today.",
-      "cover": "assets/images/articles/the-stories-everyone-is-talking-about-today-cover.png",
-      "intro": "Here are some of the stories and moments people are following today.",
-      "sections": [
-        {
-          "heading": "What is happening",
-          "paragraphs": [
-            "This is a starter article for the Jaziel publishing system.",
-            "Real articles can be added later through the article data and admin workflow."
-          ]
-        }
-      ],
-      "images": [],
-      "closing": "Stay with Jaziel for more stories worth knowing and sharing.",
-      "seo": {
-        "title": "The Stories Everyone Is Talking About Today | Jaziel",
-        "description": "Discover trending stories, viral moments and remarkable news from around the world."
-      },
-      "og": {
-        "title": "The Stories Everyone Is Talking About Today",
-        "description": "Trending stories and remarkable moments from around the world.",
-        "image": "assets/images/articles/the-stories-everyone-is-talking-about-today-cover.png"
-      },
-      "tags": [
-        "trending",
-        "viral",
-        "world",
-        "news"
-      ],
-      "relatedArticles": [],
-      "featured": false
-    },
-    {
       "id": "story-002",
       "title": "How Artificial Intelligence Is Quietly Changing Everyday Life",
       "slug": "how-artificial-intelligence-is-quietly-changing-everyday-life",
