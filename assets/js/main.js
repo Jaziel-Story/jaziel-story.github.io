@@ -566,7 +566,7 @@ function getQueryParam(name) {
 
 function articleUrl(article) {
   if (!article || !article.slug) return "#";
-  return `article.html?slug=${encodeURIComponent(article.slug)}`;
+  return `articles/${encodeURIComponent(article.slug)}.html`;
 }
 
 function categoryUrl(category) {
