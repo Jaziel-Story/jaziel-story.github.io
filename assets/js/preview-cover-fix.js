@@ -15,6 +15,29 @@
 (() => {
   "use strict";
 
+  /*
+     admin.js uses coverUrlFor() for article preview images. The function
+     was not present in the current admin runtime, so a preview containing
+     a cover could stop rendering before the HTML was inserted. Define the
+     resolver here before DOMContentLoaded so admin.js can safely use it.
+
+     Local repository paths such as assets/images/articles/foo.jpg must be
+     resolved from the site root, not from /admin/. External http(s) URLs
+     are preserved unchanged.
+  */
+  if (typeof window.coverUrlFor !== "function") {
+    window.coverUrlFor = value => {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      if (/^(?:https?:|data:|blob:)/i.test(raw)) return raw;
+      try {
+        return new URL(raw.replace(/^\/+/, ""), `${window.location.origin}/`).href;
+      } catch {
+        return raw;
+      }
+    };
+  }
+
   let activeObjectUrl = "";
 
   function revokeActiveObjectUrl() {
