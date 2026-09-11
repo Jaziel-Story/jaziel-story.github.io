@@ -1262,30 +1262,46 @@ async function publishEditorArticle() {
   publishBtn.innerHTML = `<span class="spinner"></span> Publishing…`;
 
   try {
-    const article = buildArticleFromEditor(true);
+    const slug = state.editor.slug.trim();
+    const title = state.editor.title.trim();
 
-    // Upload cover if a new file was selected
+    // Upload cover if a new file was selected. This runs BEFORE
+    // buildArticleFromEditor() and writes the final path back onto
+    // state.editor.cover, so the built article already has the real path.
     if (state.pendingCoverFile) {
       const ext = safeExt(state.pendingCoverFile.name);
-      const path = `${IMAGES_DIR}/${article.slug}-cover.${ext}`;
+      const path = `${IMAGES_DIR}/${slug}-cover.${ext}`;
       const b64 = await fileToBase64(state.pendingCoverFile);
       const existing = await ghGetFile(path, { binary: true });
-      await ghPutFile(path, b64, `Admin: upload cover image for "${article.title}"`, existing ? existing.sha : undefined);
-      article.cover = path;
-      if (!article.og.image) article.og.image = path;
+      await ghPutFile(path, b64, `Admin: upload cover image for "${title}"`, existing ? existing.sha : undefined);
+      state.editor.cover = path;
     }
 
-    // Upload body images
+    // Upload body images. This also runs BEFORE buildArticleFromEditor()
+    // and writes each uploaded path back onto state.editor.images[idx].src
+    // (using the editor's own indices, which stay aligned with
+    // pendingBodyImageFiles). buildArticleFromEditor() then keeps every
+    // image that ends up with a non-empty src.
+    //
+    // Previously the article object was built first, which immediately
+    // dropped any image whose src was still empty (i.e. every image
+    // added via file upload, since src is cleared to "" the moment a
+    // file is chosen). That silently discarded body/section images
+    // before they were ever uploaded — the root cause of body images
+    // not appearing on the article page.
     for (const [idxStr, file] of Object.entries(state.pendingBodyImageFiles)) {
       const idx = +idxStr;
-      if (!article.images[idx]) continue;
+      if (!state.editor.images[idx]) continue;
       const ext = safeExt(file.name);
-      const path = `${IMAGES_DIR}/${article.slug}-${idx + 1}.${ext}`;
+      const path = `${IMAGES_DIR}/${slug}-${idx + 1}.${ext}`;
       const b64 = await fileToBase64(file);
       const existing = await ghGetFile(path, { binary: true });
-      await ghPutFile(path, b64, `Admin: upload image ${idx + 1} for "${article.title}"`, existing ? existing.sha : undefined);
-      article.images[idx].src = path;
+      await ghPutFile(path, b64, `Admin: upload image ${idx + 1} for "${title}"`, existing ? existing.sha : undefined);
+      state.editor.images[idx].src = path;
     }
+
+    const article = buildArticleFromEditor(true);
+    if (!article.og.image && article.cover) article.og.image = article.cover;
 
     // Merge into the article list
     let nextArticles;

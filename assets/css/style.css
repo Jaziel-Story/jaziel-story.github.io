@@ -187,7 +187,8 @@ main {
 .featured-card {
   position: relative;
   overflow: hidden;
-  min-height: 420px;
+  aspect-ratio: 16 / 10;
+  min-height: 260px;
   display: flex;
   align-items: flex-end;
   border-radius: var(--radius);
@@ -199,8 +200,9 @@ main {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
   background: linear-gradient(135deg, #222, #777);
+  background-size: cover;
+  background-position: center;
 }
 
 .featured-overlay {
@@ -233,9 +235,9 @@ main {
 .featured-content h2 {
   margin: 0;
   max-width: 800px;
-  font-size: clamp(1.65rem, 7vw, 3.6rem);
-  line-height: 1.03;
-  letter-spacing: -.045em;
+  font-size: clamp(1.4rem, 4.5vw, 2.6rem);
+  line-height: 1.12;
+  letter-spacing: -.03em;
 }
 
 .story-meta {
@@ -285,10 +287,12 @@ main {
 
 .story-thumb {
   width: 112px;
-  height: 88px;
-  object-fit: cover;
+  aspect-ratio: 16 / 10;
+  height: auto;
   border-radius: 11px;
   background: linear-gradient(135deg, #ddd, #aaa);
+  background-size: cover;
+  background-position: center;
 }
 
 .story-card h3 {
@@ -662,7 +666,6 @@ main {
 
   .story-thumb {
     width: 180px;
-    height: 115px;
   }
 
   .content-grid {
@@ -676,7 +679,8 @@ main {
   }
 
   .featured-card {
-    min-height: 540px;
+    aspect-ratio: 21 / 9;
+    min-height: 360px;
   }
 
   .footer-inner {
