@@ -377,7 +377,7 @@ function updateArticleMeta(article) {
   const ogTitle = (article.og && article.og.title) || article.title || "";
   const ogDescription = (article.og && article.og.description) || description;
   const ogImage = (article.og && article.og.image) || article.cover || "";
-  const url = `${window.location.origin}${window.location.pathname}?slug=${encodeURIComponent(article.slug || "")}`;
+  const url = `${window.location.origin}/articles/${encodeURIComponent(article.slug || "")}.html`;
 
   document.title = title;
   setMeta('meta[name="description"]', "content", description);

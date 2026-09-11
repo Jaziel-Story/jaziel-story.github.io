@@ -869,7 +869,7 @@ function editorShellHTML() {
       <div class="field"><label>OG Title</label><input type="text" id="inOgTitle"></div>
       <div class="field"><label>OG Description</label><textarea id="inOgDesc" rows="2"></textarea></div>
       <div class="field"><label>OG Image URL</label><input type="url" id="inOgImage" placeholder="Defaults to the cover image"></div>
-      <p class="hint">Canonical URL is generated automatically as <code>${escapeHTML(state.settings.siteUrl)}article.html?slug=…</code></p>
+      <p class="hint">Canonical URL is generated automatically as <code>${escapeHTML(state.settings.siteUrl)}articles/&lt;slug&gt;.html</code></p>
     </div>
 
     <div id="tab-ai" class="tab-panel panel" hidden>
@@ -898,7 +898,7 @@ function bindEditorEvents(root) {
 
   $("#inTitle").addEventListener("input", () => {
     state.editor.title = $("#inTitle").value;
-    if (state.editorMode === "new" || !state.editor._slugManuallyEdited) {
+    if (state.editorMode === "new" && !state.editor._slugManuallyEdited) {
       const slug = slugify(state.editor.title);
       $("#inSlug").value = slug;
       state.editor.slug = slug;
@@ -1198,6 +1198,7 @@ function validateEditor() {
 
   if (!e.title || !e.title.trim()) errors.title = "Title is required.";
   if (!e.slug || !e.slug.trim()) errors.slug = "Slug is required.";
+  else if (e.slug === "new") errors.slug = "The slug \"new\" is reserved for the new-article editor route.";
   else if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(e.slug)) errors.slug = "Slug must be lowercase letters, numbers, and hyphens only.";
   else {
     const clash = state.articles.find(a => a.slug === e.slug && a.id !== state.editorOriginalId);
