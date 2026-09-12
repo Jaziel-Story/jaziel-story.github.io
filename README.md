@@ -5,22 +5,25 @@ for creating and managing articles without hand-editing `articles.json`.
 
 Live site: https://jaziel-story.github.io/
 
-## Site structure (unchanged)
+## Site structure
 
 ```
 index.html         Homepage
 article.html        Single article view (?slug=…)
-search.html          Search
-category.html        Category browsing
+search.html         Search
+category.html       Category browsing
 about.html, contact.html, privacy.html, terms.html
-articles.json        All article data (root of the repo — do not move)
+articles.json       All article data (root of the repo — do not move)
 assets/css/style.css  Shared stylesheet
 assets/js/main.js     Shared frontend logic (reads articles.json)
+assets/js/home-featured-minimal.js  Lightweight homepage presentation helper
+assets/js/home-latest-final.js      Single homepage data/render loader
 assets/images/articles/  Article images (cover + body), uploaded via the Admin Panel
 ```
 
-None of the files above changed behavior — the Admin Panel writes the exact
-same `articles.json` schema the site already reads.
+The homepage intentionally uses one dedicated data/render loader so `main.js`
+does not initialize the same homepage twice. Article Schema v1 remains
+unchanged and locked.
 
 ## Admin Panel
 
@@ -91,6 +94,43 @@ later, update that single constant — no other file needs to change.
 Git commits first. Do not repeat a change that is already marked DONE unless
 a regression is confirmed.
 
+### 2026-09-12 — Homepage performance consolidation
+
+- **Priority:** P1 / user-reported homepage performance problem.
+- **Symptom:** Homepage could feel heavy and sometimes appear to refresh.
+- **Root cause found:** The homepage had multiple competing data loaders
+  (`main.js`, `home-latest.js`, `home-latest-final.js`, and an inline fallback)
+  plus MutationObservers watching homepage DOM changes. This caused duplicate
+  `articles.json` requests and repeated DOM work. The older `home-latest.js`
+  also re-applied the Featured Story from inside a MutationObserver.
+- **Fix:** Homepage now uses one dedicated `home-latest-final.js` data/render
+  path. `index.html` uses `data-page="home-static"` so `main.js` still provides
+  shared functionality such as the search button but does not initialize a
+  second homepage renderer.
+- **Fix:** Removed the inline homepage fallback renderer and the obsolete
+  `home-latest.js` loader.
+- **Fix:** Removed the obsolete document-wide `link-fix.js` MutationObserver.
+  Repository search found no remaining `article.html?slug=` references that
+  required it.
+- **Fix:** Removed the MutationObserver from
+  `home-featured-minimal.js`; it now runs once after DOMContentLoaded.
+- **Current homepage data flow:** `home-latest-final.js` fetches
+  `articles.json` once, sorts by `updatedAt` → `updated` → `date`, and renders
+  Featured Story, Latest Stories, and Most Popular.
+- **Files changed:** `index.html`, `assets/js/home-featured-minimal.js`.
+- **Files removed:** `assets/js/home-latest.js`, `assets/js/link-fix.js`.
+- **Commits:**
+  - `aa690bb0658960d0d3b0871e2e7452b73db3f10b` — remove featured-card observer
+  - `184a89b922fb860079dcd80efadfd87bbc97122b` — consolidate homepage loaders
+  - `f58ab89ccda1b0183ef636b76b4da46ed0de67cd` — remove obsolete latest loader
+  - `83bb01c1d20d82de509a4467d2906675fe8a7580` — remove obsolete link observer
+- **Verification:** Source structure reviewed after the changes. The
+  repository's JavaScript syntax validation should be allowed to run on the
+  new commits before this is marked fully verified.
+- **Deployment:** GitHub Pages deployment/cache refresh is still required for
+  live performance verification.
+- **Article Schema v1:** unchanged and remains locked.
+
 ### 2026-09-12 — Admin Panel recovery & audit
 
 - Fixed the Admin Panel JavaScript parser issue from the Claude repair
@@ -106,7 +146,7 @@ a regression is confirmed.
   Dashboard, Articles, New Article, Search, Settings, Help, article count,
   category count, latest article, and Recent Articles.
 - Removed the completed one-time repair workflow in commit
-  `93c8332bd088464677d7f10eb9bf12a54c1ae3b6` so emergency repair code does
+  `93c8332bd088464677d7f10eb9bf12a54c1ae3b6 so emergency repair code does
   not remain in the normal architecture.
 - **Article Schema v1:** unchanged and remains locked.
 
@@ -171,6 +211,8 @@ a regression is confirmed.
 - Related Stories static image-path fix is implemented.
 - The Body Image Add freeze fix is implemented; live click/file-selection
   verification is pending deployment/cache refresh.
+- The homepage duplicate-loader/observer cleanup is implemented in source;
+  live performance verification is pending deployment/cache refresh.
 - Article Schema v1 is locked and unchanged.
 
 ### 🔴 Needs user input
