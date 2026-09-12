@@ -82,7 +82,21 @@ This file is the project memory for repository changes. Read it before making a 
 - **Status:** ACTIVE
 - **File:** `CHANGELOG.md`
 - **Commit:** `1402eeb1f72de198e810e6185c7f4b7a7cbdeb31` (created), followed by subsequent updates.
-- **Rule:** Every future repository change must be recorded here before moving to another fix.
+- **Rule:** Every future repository change must be recorded here before moving on to another fix.
+
+### Admin Panel — Claude forensic syntax fix applied
+- **Status:** APPLIED / VALIDATION + LIVE DEPLOYMENT PENDING
+- **File:** `admin/admin.js`
+- **Source:** User-provided Claude AI repair bundle `JAZIEL_Admin_Panel_Fix_Bundle.zip`.
+- **Confirmed root cause:** Missing `}` in `renderBodyImages()` on the `[data-image-url]` input listener, causing `SyntaxError: Unexpected token ')'`.
+- **Intended change:** Add the single missing `}` so the listener closes correctly.
+- **Repository commit:** `765c0e8fc221cfe074607006ef7cad276aa5581f`
+- **Commit message:** `Fix admin panel renderBodyImages syntax`
+- **Pre-change blob:** `12a3e3b40fc6ced566bc1ab03c09259aafea68b1`
+- **Post-change blob:** `aa9621df0698503c268eeb1c1c3fed3f8fe0714d`
+- **Scope:** No Article Schema v1, `articles.json`, Most Popular, Preview system, or dependency files were intentionally changed.
+- **Verification so far:** GitHub compare confirms only `admin/admin.js` changed in this commit. Claude's supplied repaired `admin.js` independently passed `node --check` in the uploaded bundle. Repository-level Actions validation and live `/admin/` behavior remain to be verified before declaring the fix complete.
+- **Important:** Do not declare this fix fully DONE until the repository's JavaScript validation passes and `/admin/` is tested after GitHub Pages deployment.
 
 ### Documentation rule
 From this point forward, every repository change must be recorded in this file before moving on to another fix. The record must include:
