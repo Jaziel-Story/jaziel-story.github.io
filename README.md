@@ -88,6 +88,30 @@ update that single constant — no other file needs to change.
 commits first. Do not repeat a change that is already marked DONE unless a
 regression is confirmed.
 
+### 2026-09-12 — Admin Preview image order fix
+
+- **Priority:** P1 / user screenshot confirmed Body Images were rendered after
+  Section 3 instead of in section order.
+- **Finding:** The live Preview showed both existing body figures at the end of
+  the article content. The user has intentionally postponed the missing
+  Section 3 image, so the required behavior is: Body Image 1 after Section 1,
+  Body Image 2 after Section 2, and no image after Section 3 until one is added.
+- **Fix:** Added `assets/js/admin-preview-order-fix.js`. It runs once after the
+  Preview button is clicked, identifies the Preview `h2` sections and existing
+  `figure.article-figure` elements, then inserts figure `i` immediately before
+  heading `i+1`. This produces the intended section order without a
+  `MutationObserver` and without changing article data.
+- **Fix:** Loaded the helper from `admin/index.html` with a cache-busted version.
+- **Files changed:** `admin/index.html`, `assets/js/admin-preview-order-fix.js`.
+- **Commit:** `8e8c3af2288eac967a47452fd5ae6f5e96c017f0` — helper;
+  `d134c30290e30a3fa285b54899812145f659c47a` — Admin loader.
+- **Verification:** Helper JavaScript syntax was checked before commit. The
+  uploaded live screenshot was used to confirm the exact ordering defect.
+  Live post-deploy verification is still required.
+- **Deployment:** NEEDS GITHUB PAGES DEPLOYMENT + USER LIVE VERIFICATION.
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
+- **Article Schema v1:** unchanged and remains locked.
+
 ### 2026-09-12 — Admin Preview stability + Body Image relative-path fix
 
 - **Priority:** P1 / user-reported Preview refresh/stuck behavior and missing
@@ -145,6 +169,7 @@ regression is confirmed.
 
 ### 🟡 Needs live verification
 
+- Admin Preview image section ordering fix.
 - Admin Preview stability fix and Body Image relative-path preview fix.
 - Homepage duplicate-loader/observer cleanup.
 - AI Writer P1 workflow fix.
