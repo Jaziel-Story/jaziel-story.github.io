@@ -1,16 +1,30 @@
 /* =========================================================
    JAZIEL — Admin Image Compressor
-   Compresses locally selected cover/body images in the browser
-   before the existing admin publish flow uploads them.
+   Social OG mode for cover images + normal compression for body images.
    Article Schema v1 remains unchanged.
+
+   COVER / OG SOCIAL MODE
+   - 1200x630 (1.91:1) target
+   - JPEG for broad Facebook / WhatsApp / X / LinkedIn compatibility
+   - Target <= 300 KB when practical
+
+   BODY IMAGE MODE
+   - WebP
+   - Target <= 900 KB
    ========================================================= */
 
 (() => {
   "use strict";
 
-  const MAX_DIMENSION = 1600;
-  const TARGET_BYTES = 900 * 1024;
-  const QUALITIES = [0.82, 0.74, 0.66, 0.60, 0.56];
+  const OG_WIDTH = 1200;
+  const OG_HEIGHT = 630;
+  const OG_TARGET_BYTES = 300 * 1024;
+  const OG_QUALITIES = [0.84, 0.76, 0.68, 0.60, 0.52, 0.44, 0.38];
+
+  const BODY_MAX_DIMENSION = 1600;
+  const BODY_TARGET_BYTES = 900 * 1024;
+  const BODY_QUALITIES = [0.82, 0.74, 0.66, 0.60, 0.56];
+
   let activeJobs = 0;
 
   function showToast(message, type = "info") {
@@ -60,28 +74,78 @@
     });
   }
 
-  function canvasBlob(canvas, quality) {
+  function canvasBlob(canvas, type, quality) {
     return new Promise((resolve, reject) => {
       canvas.toBlob(blob => {
         if (blob) resolve(blob);
         else reject(new Error("This browser could not encode the compressed image."));
-      }, "image/webp", quality);
+      }, type, quality);
     });
   }
 
-  function webpFile(blob, originalName) {
+  function makeFile(blob, originalName, extension, mime) {
     const base = String(originalName || "image").replace(/\.[^.]+$/, "");
-    return new File([blob], `${base}.webp`, { type: "image/webp", lastModified: Date.now() });
+    return new File([blob], `${base}.${extension}`, { type: mime, lastModified: Date.now() });
   }
 
-  async function compressImage(file) {
-    // Preserve GIF files so animated GIFs are not accidentally flattened.
+  function drawCoverCrop(ctx, source, width, height) {
+    const sourceWidth = source.width;
+    const sourceHeight = source.height;
+    const targetRatio = width / height;
+    const sourceRatio = sourceWidth / sourceHeight;
+
+    let sx = 0;
+    let sy = 0;
+    let sw = sourceWidth;
+    let sh = sourceHeight;
+
+    if (sourceRatio > targetRatio) {
+      sw = sourceHeight * targetRatio;
+      sx = (sourceWidth - sw) / 2;
+    } else if (sourceRatio < targetRatio) {
+      sh = sourceWidth / targetRatio;
+      sy = (sourceHeight - sh) / 2;
+    }
+
+    ctx.drawImage(source, sx, sy, sw, sh, 0, 0, width, height);
+  }
+
+  async function compressCover(file) {
+    if (!file || file.type === "image/gif") return file;
+
+    const source = await loadImage(file);
+    const canvas = document.createElement("canvas");
+    canvas.width = OG_WIDTH;
+    canvas.height = OG_HEIGHT;
+    const ctx = canvas.getContext("2d", { alpha: false });
+    if (!ctx) throw new Error("Canvas is unavailable in this browser.");
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, OG_WIDTH, OG_HEIGHT);
+    drawCoverCrop(ctx, source, OG_WIDTH, OG_HEIGHT);
+
+    let best = null;
+    for (const quality of OG_QUALITIES) {
+      const blob = await canvasBlob(canvas, "image/jpeg", quality);
+      best = blob;
+      if (blob.size <= OG_TARGET_BYTES) break;
+    }
+
+    if (typeof source.close === "function") source.close();
+    if (!best) throw new Error("OG cover compression failed.");
+
+    // Always use JPEG for the social cover so the published og:image is broadly compatible.
+    return makeFile(best, file.name, "jpg", "image/jpeg");
+  }
+
+  async function compressBody(file) {
     if (!file || file.type === "image/gif") return file;
 
     const source = await loadImage(file);
     const sourceWidth = source.width;
     const sourceHeight = source.height;
-    const scale = Math.min(1, MAX_DIMENSION / Math.max(sourceWidth, sourceHeight));
+    const scale = Math.min(1, BODY_MAX_DIMENSION / Math.max(sourceWidth, sourceHeight));
     const width = Math.max(1, Math.round(sourceWidth * scale));
     const height = Math.max(1, Math.round(sourceHeight * scale));
 
@@ -95,14 +159,13 @@
     ctx.drawImage(source, 0, 0, width, height);
 
     let best = null;
-    for (const quality of QUALITIES) {
-      const blob = await canvasBlob(canvas, quality);
+    for (const quality of BODY_QUALITIES) {
+      const blob = await canvasBlob(canvas, "image/webp", quality);
       best = blob;
-      if (blob.size <= TARGET_BYTES) break;
+      if (blob.size <= BODY_TARGET_BYTES) break;
     }
 
-    // One smaller pass for very large/complex images.
-    if (best && best.size > TARGET_BYTES && Math.max(width, height) > 1280) {
+    if (best && best.size > BODY_TARGET_BYTES && Math.max(width, height) > 1280) {
       const scale2 = 1280 / Math.max(width, height);
       const width2 = Math.max(1, Math.round(width * scale2));
       const height2 = Math.max(1, Math.round(height * scale2));
@@ -111,14 +174,14 @@
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(source, 0, 0, width2, height2);
-      best = await canvasBlob(canvas, 0.56);
+      best = await canvasBlob(canvas, "image/webp", 0.56);
     }
 
     if (typeof source.close === "function") source.close();
     if (!best) throw new Error("Image compression failed.");
 
-    // Never replace a source with a larger file.
-    return best.size < file.size ? webpFile(best, file.name) : file;
+    // Never replace a body image with a larger file.
+    return best.size < file.size ? makeFile(best, file.name, "webp", "image/webp") : file;
   }
 
   function replaceInputFile(input, file) {
@@ -129,7 +192,7 @@
   }
 
   function labelFor(input) {
-    if (input.id === "coverFile") return "Cover image";
+    if (input.id === "coverFile") return "OG cover";
     return `Body image ${Number(input.dataset.imageFile || 0) + 1}`;
   }
 
@@ -147,15 +210,17 @@
     input.dataset.compressing = "1";
     activeJobs += 1;
     setPublishDisabled(true);
+    const isCover = input.id === "coverFile";
     const label = labelFor(input);
     const originalSize = file.size;
 
     try {
-      const compressed = await compressImage(file);
+      const compressed = isCover ? await compressCover(file) : await compressBody(file);
       if (compressed !== file) {
         replaceInputFile(input, compressed);
         const saved = Math.max(0, Math.round((1 - compressed.size / originalSize) * 100));
-        showToast(`${label} compressed: ${formatBytes(originalSize)} → ${formatBytes(compressed.size)} (${saved}% smaller).`, "success");
+        const mode = isCover ? "OG social cover (1200×630 JPEG)" : "body WebP";
+        showToast(`${label} optimized: ${formatBytes(originalSize)} → ${formatBytes(compressed.size)} (${saved}% smaller) · ${mode}.`, "success");
       }
     } catch (error) {
       console.error("[image-compressor]", error);
