@@ -14,6 +14,26 @@ This file is the project memory for repository changes. Read it before making a 
 
 ## 2026-09-12
 
+### Homepage performance consolidation — duplicate loaders and observers removed
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P1 / user-reported homepage performance problem.
+- **Symptom:** Homepage could feel heavy and sometimes appear to refresh.
+- **Root cause:** The homepage had multiple competing data loaders (`main.js`, `home-latest.js`, `home-latest-final.js`, and an inline fallback) plus MutationObservers watching homepage DOM changes. This caused duplicate `articles.json` requests and repeated DOM work. The older `home-latest.js` also re-applied the Featured Story from inside a MutationObserver.
+- **Fix:** `index.html` now uses one dedicated homepage renderer, `home-latest-final.js`. The body uses `data-page="home-static"` so `main.js` keeps shared behavior such as the search button but does not initialize a second homepage renderer.
+- **Fix:** Removed the inline homepage fallback renderer and obsolete `home-latest.js`.
+- **Fix:** Removed obsolete `link-fix.js`, including its document-wide MutationObserver. Repository search found no remaining `article.html?slug=` references that required it.
+- **Fix:** Removed the MutationObserver from `home-featured-minimal.js`; it now runs once after DOMContentLoaded.
+- **Files changed:** `index.html`, `assets/js/home-featured-minimal.js`
+- **Files removed:** `assets/js/home-latest.js`, `assets/js/link-fix.js`
+- **Commits:**
+  - `aa690bb0658960d0d3b0871e2e7452b73db3f10b` — remove featured-card observer
+  - `184a89b922fb860079dcd80efadfd87bbc97122b` — consolidate homepage loaders
+  - `f58ab89ccda1b0183ef636b76b4da46ed0de67cd` — remove obsolete latest loader
+  - `83bb01c1d20d82de509a4467d2906675fe8a7580` — remove obsolete link observer
+- **Verification:** Repository source was reviewed after the changes. JavaScript syntax validation must pass before declaring this fully verified.
+- **Deployment:** GitHub Pages deployment/cache refresh and user live testing are still required.
+- **Article Schema v1:** unchanged and remains locked.
+
 ### Live verification — Admin Panel recovered
 - **Status:** VERIFIED LIVE
 - **Evidence:** User screenshot shows the deployed `/admin/` page successfully rendering Dashboard, article count, category count, latest article, Recent Articles, and Edit action. The previous `Loading admin panel...` state is gone.
