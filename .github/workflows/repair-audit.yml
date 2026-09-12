@@ -1,29 +1,22 @@
 name: Jaziel prioritized audit repair
-
 on:
   push:
-    paths:
-      - ".github/workflows/repair-audit.yml"
+    paths: [".github/workflows/repair-audit.yml"]
   workflow_dispatch:
-
 permissions:
   contents: write
-
 jobs:
   repair:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply P1 fixes
+      - name: Fix cover compression
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
-
-          # Cover compressor: always JPEG, including GIF; resize if quality alone is not enough.
-          p = Path('assets/js/image-compressor.js')
-          s = p.read_text()
-          fn = '''async function compressCover(file) {
+          p=Path('assets/js/image-compressor.js'); s=p.read_text()
+          new='''async function compressCover(file) {
             if (!file) return file;
             const source = await loadImage(file);
             let width = OG_WIDTH;
@@ -31,96 +24,34 @@ jobs:
             let best = null;
             for (let pass = 0; pass < 6; pass++) {
               const canvas = document.createElement("canvas");
-              canvas.width = width;
-              canvas.height = height;
+              canvas.width = width; canvas.height = height;
               const ctx = canvas.getContext("2d", { alpha: false });
               if (!ctx) throw new Error("Canvas is unavailable in this browser.");
-              ctx.imageSmoothingEnabled = true;
-              ctx.imageSmoothingQuality = "high";
-              ctx.fillStyle = "#ffffff";
-              ctx.fillRect(0, 0, width, height);
+              ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+              ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, width, height);
               drawCoverCrop(ctx, source, width, height);
               for (const quality of [0.84,0.76,0.68,0.60,0.52,0.44,0.38,0.32,0.28]) {
                 best = await canvasBlob(canvas, "image/jpeg", quality);
                 if (best.size <= OG_TARGET_BYTES) break;
               }
               if (best && best.size <= OG_TARGET_BYTES) break;
-              if (Math.max(width, height) <= 800) break;
-              width = Math.max(800, Math.round(width * 0.85));
-              height = Math.max(420, Math.round(height * 0.85));
+              if (Math.max(width,height) <= 800) break;
+              width=Math.max(800,Math.round(width*0.85));
+              height=Math.max(420,Math.round(height*0.85));
             }
             if (typeof source.close === "function") source.close();
             if (!best) throw new Error("OG cover compression failed.");
             return makeFile(best, file.name, "jpg", "image/jpeg");
           }'''
-          s, n = re.subn(r'async function compressCover\(file\) \{.*?\n\}', fn, s, count=1, flags=re.S)
-          if n != 1: raise SystemExit('compressCover anchor not found')
-          s = s.replace('if (!/^image\\/(jpeg|png|webp|gif)$/.test(file.type) || file.type === "image/gif") return;', 'if (!/^image\\/(jpeg|png|webp|gif)$/.test(file.type)) return;')
+          s,n=re.subn(r'async function compressCover\(file\) \{.*?\n\}',new,s,count=1,flags=re.S)
+          if n!=1: raise SystemExit('compressCover not found')
+          s=s.replace('if (!/^image\\/(jpeg|png|webp|gif)$/.test(file.type) || file.type === "image/gif") return;','if (!/^image\\/(jpeg|png|webp|gif)$/.test(file.type)) return;')
           p.write_text(s)
-
-          # HTTPS-only external image URLs.
-          for name in ['admin/admin.js', 'assets/js/image-manager.js']:
-            p = Path(name); s = p.read_text()
-            s, n = re.subn(r'function isValidImageUrl\(value\) \{.*?\n\}', '''function isValidImageUrl(value) {
-              try { return new URL(String(value || "").trim()).protocol === "https:"; }
-              catch { return false; }
-            }''', s, count=1, flags=re.S)
-            if n != 1: raise SystemExit(name + ' isValidImageUrl anchor not found')
-            p.write_text(s)
-
-          # Truthful OG metadata and static related stories.
-          p = Path('.github/workflows/generate-static-articles.yml')
-          s = p.read_text()
-          old = "const canonical=`${site}articles/${a.slug}.html`, desc=a.dek||a.description||'', og=a.og?.image||a.cover||'';"
-          new = "const canonical=`${site}articles/${a.slug}.html`, desc=a.dek||a.description||'', og=a.og?.image||a.cover||''; const ext=String(og).split('?')[0].split('.').pop().toLowerCase(); const ogType=({jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif'})[ext]||'';"
-          if old in s: s = s.replace(old, new, 1)
-          s = s.replace('<meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">', '${ogType?`<meta property="og:image:type" content="${ogType}">`:""}')
-          s = s.replace('<script src="../assets/js/main.js" defer></script></head>', '<script src="../assets/js/main.js" defer></script><script src="../assets/js/related-articles.js" defer></script></head>')
-          p.write_text(s)
-
-          # Temporary AI request files must not survive the workflow, even on failure.
-          p = Path('.github/workflows/ai-writer.yml')
-          s = p.read_text()
-          if 'Remove temporary request file' not in s:
-            s = s.replace('      - name: Commit result', '      - name: Remove temporary request file\n        if: always()\n        run: rm -f "admin/ai-requests/${{ github.event.inputs.request_id }}.json"\n\n      - name: Commit result', 1)
-          s = s.replace('      - name: Commit result\n        run:', '      - name: Commit result\n        if: always()\n        run:', 1)
-          p.write_text(s)
-
-          # Remove obsolete self-patching workflows.
-          for name in ['.github/workflows/audit-search-category.yml', '.github/workflows/related-articles-static.yml']:
-            Path(name).unlink(missing_ok=True)
-
-          # Remove known orphan image from the audit.
-          d = Path('assets/images/articles')
-          if d.exists():
-            for f in d.glob('my-story-life-work-and-creativity*body-3*.png'): f.unlink()
           PY
-      - name: Convert existing local covers to JPEG
-        run: |
-          if command -v convert >/dev/null 2>&1; then
-            python3 - <<'PY'
-            from pathlib import Path
-            import json, subprocess, re
-            p=Path('articles.json'); data=json.loads(p.read_text()); changed=False
-            for a in data.get('articles',[]):
-              cover=str(a.get('cover',''))
-              if not cover or re.match(r'^https?://',cover,re.I) or not re.search(r'\.(webp|png|gif)$',cover,re.I): continue
-              src=Path(cover.lstrip('/'))
-              if not src.exists(): continue
-              dst=src.with_suffix('.jpg')
-              subprocess.run(['convert',str(src),'-background','white','-alpha','remove','-alpha','off','-resize','1200x630^','-gravity','center','-extent','1200x630','-quality','82',str(dst)],check=False)
-              if dst.exists():
-                old=a.get('cover'); a['cover']=str(dst)
-                if isinstance(a.get('og'),dict) and a['og'].get('image')==old: a['og']['image']=str(dst)
-                changed=True
-            if changed: p.write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n')
-            PY
-          else
-            echo "ImageMagick not available; keeping existing cover format."
-          fi
-      - name: Commit P1 fixes
+      - name: Commit
         run: |
           git config user.name "jaziel-repair[bot]"
           git config user.email "actions@users.noreply.github.com"
-          git add -A
-          if git diff --cached --quiet; then echo "No P1 changes."; else git commit -m "Fix P1 media metadata and workflow issues"; git push; fi
+          git add assets/js/image-compressor.js
+          git commit -m "Fix social cover compression" || exit 0
+          git push
