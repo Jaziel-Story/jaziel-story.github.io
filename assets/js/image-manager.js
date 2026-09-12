@@ -21,12 +21,22 @@
   }
 
   function validUrl(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return true;
     try {
-      const url = new URL(String(value || "").trim());
-      return url.protocol === "https:";
-    } catch {
-      return false;
-    }
+      const url = new URL(raw, window.location.href);
+      if (url.protocol === "https:" || url.protocol === "http:") {
+        // Absolute HTTP(S) URLs are allowed for externally hosted images.
+        return true;
+      }
+    } catch {}
+
+    // Stored Jaziel repository paths are valid image references too. Keep
+    // this deliberately narrow so javascript:, data:, and other schemes
+    // can never pass the image URL guard.
+    return /^(?:\.?\.?\/|\/)?assets\/images\/articles\/[^\s?#]+(?:[?#].*)?$/i.test(raw)
+      || /^\.\.?\/[^\s?#]+(?:[?#].*)?$/i.test(raw)
+      || /^\/[^\s?#]+(?:[?#].*)?$/.test(raw);
   }
 
   function validateFile(file, label) {
@@ -55,11 +65,11 @@
 
   function validateUrlInput(input) {
     const value = input.value.trim();
-    if (!value || validUrl(value)) {
+    if (validUrl(value)) {
       input.setCustomValidity("");
       return true;
     }
-    input.setCustomValidity("Use a valid HTTPS image URL.");
+    input.setCustomValidity("Use a valid HTTP(S) image URL or a Jaziel repository image path.");
     return false;
   }
 
@@ -147,6 +157,25 @@
     });
   }
 
+  async function deleteBodyDraftImages(draftKey) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      const prefix = `${draftKey}::body::`;
+      const request = store.openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) return;
+        if (String(cursor.key).startsWith(prefix)) cursor.delete();
+        cursor.continue();
+      };
+      request.onerror = () => reject(request.error || new Error("Could not inspect draft image storage."));
+      tx.oncomplete = () => { db.close(); resolve(); };
+      tx.onerror = () => { db.close(); reject(tx.error || new Error("Could not clean draft image storage.")); };
+    });
+  }
+
   function currentDraftKey() {
     try {
       const drafts = JSON.parse(localStorage.getItem(DRAFTS_KEY) || "{}");
@@ -166,17 +195,15 @@
     const coverFile = coverInput?.files?.[0] || null;
     const coverKey = imageKey(draftKey, "cover");
     if (coverFile) await putImage(coverKey, coverFile); else await deleteImage(coverKey);
+
+    // Clear all old body-image keys first, then save exactly the currently
+    // selected files. This avoids stale files after add/remove/reorder.
+    await deleteBodyDraftImages(draftKey);
     const bodyInputs = [...document.querySelectorAll("#bodyImagesList [data-image-file]")];
-    const activeKeys = new Set();
     for (const input of bodyInputs) {
       const index = input.dataset.imageFile;
       const file = input.files?.[0] || null;
-      const key = imageKey(draftKey, "body", index);
-      if (file) { activeKeys.add(key); await putImage(key, file); } else await deleteImage(key);
-    }
-    for (let i = 0; i < bodyInputs.length; i++) {
-      const key = imageKey(draftKey, "body", i);
-      if (!activeKeys.has(key)) await deleteImage(key);
+      if (file) await putImage(imageKey(draftKey, "body", index), file);
     }
   }
 
@@ -212,17 +239,24 @@
 
   document.addEventListener("click", event => {
     const saveButton = event.target.closest("#btnSaveDraft");
-    if (saveButton) setTimeout(async () => { try { await saveDraftImages(currentDraftKey()); } catch (error) { console.error("[draft-image-persistence] save failed", error); showError("Draft text was saved, but the draft images could not be saved."); } }, 0);
+    if (saveButton) setTimeout(async () => {
+      try { await saveDraftImages(currentDraftKey()); }
+      catch (error) { console.error("[draft-image-persistence] save failed", error); showError("Draft text was saved, but the draft images could not be saved."); }
+    }, 0);
+
     const loadButton = event.target.closest("#btnLoadDraft");
-    if (loadButton) setTimeout(async () => { try { await restoreDraftImages(currentDraftKey()); } catch (error) { console.error("[draft-image-persistence] restore failed", error); showError("Draft text was loaded, but the draft images could not be restored."); } }, 0);
+    if (loadButton) setTimeout(async () => {
+      try { await restoreDraftImages(currentDraftKey()); }
+      catch (error) { console.error("[draft-image-persistence] restore failed", error); showError("Draft text was loaded, but the draft images could not be restored."); }
+    }, 0);
+
     const clearButton = event.target.closest("#btnClearDraft");
     if (clearButton) {
       const keyBeforeClear = currentDraftKey();
       setTimeout(async () => {
         try {
           await deleteImage(imageKey(keyBeforeClear, "cover"));
-          const bodyInputs = [...document.querySelectorAll("#bodyImagesList [data-image-file]")];
-          for (let i = 0; i < bodyInputs.length; i++) await deleteImage(imageKey(keyBeforeClear, "body", i));
+          await deleteBodyDraftImages(keyBeforeClear);
         } catch (error) { console.error("[draft-image-persistence] clear failed", error); }
       }, 0);
     }
