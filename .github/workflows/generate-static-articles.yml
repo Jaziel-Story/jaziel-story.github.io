@@ -21,6 +21,27 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - name: Normalize local social covers to JPEG
+        run: |
+          if command -v convert >/dev/null 2>&1; then
+            python3 - <<'PY'
+            from pathlib import Path
+            import json, re, subprocess
+            p=Path('articles.json'); data=json.loads(p.read_text()); changed=False
+            for article in data.get('articles',[]):
+              cover=str(article.get('cover',''))
+              if not cover or re.match(r'^https?://',cover,re.I) or not re.search(r'\.(webp|png|gif)$',cover,re.I): continue
+              src=Path(cover.lstrip('/'))
+              if not src.exists(): continue
+              dst=src.with_suffix('.jpg')
+              subprocess.run(['convert',str(src),'-background','white','-alpha','remove','-alpha','off','-resize','1200x630^','-gravity','center','-extent','1200x630','-quality','82',str(dst)],check=False)
+              if dst.exists():
+                old=article.get('cover'); article['cover']=str(dst)
+                if isinstance(article.get('og'),dict) and article['og'].get('image')==old: article['og']['image']=str(dst)
+                changed=True
+            if changed: p.write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n')
+            PY
+          fi
       - name: Validate Article Schema v1
         run: node .github/scripts/validate-articles.mjs
       - name: Generate static pages
@@ -61,9 +82,9 @@ jobs:
           for(const f of ['index.html','search.html','category.html','article.html']){let h=fs.readFileSync(f,'utf8');if(!h.includes('assets/js/link-fix.js'))h=h.replace('<script src="assets/js/main.js" defer></script>','<script src="assets/js/link-fix.js" defer></script>\n  <script src="assets/js/main.js" defer></script>');fs.writeFileSync(f,h)}
           let main=fs.readFileSync('assets/js/main.js','utf8'); main=main.replace(/return `article\\.html\\?slug=\\$\\{encodeURIComponent\\(article\\.slug\\)\\}`;/, 'return `articles/${encodeURIComponent(article.slug)}.html`;'); fs.writeFileSync('assets/js/main.js',main);
           NODE
-      - name: Commit generated pages
+      - name: Commit generated pages and normalized covers
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add articles assets/js/main.js assets/js/link-fix.js index.html search.html category.html article.html
+          git add articles articles.json assets/images/articles assets/js/main.js assets/js/link-fix.js index.html search.html category.html article.html
           if git diff --cached --quiet; then echo "Nothing to commit."; else git commit -m "Generate static Jaziel articles"; git push; fi
