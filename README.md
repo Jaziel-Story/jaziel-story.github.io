@@ -142,6 +142,26 @@ a regression is confirmed.
 - This fix is already complete; do not repeat it unless a new regression is
   confirmed.
 
+### 2026-09-12 — Body Image Add freeze fix
+
+- **Priority:** P1 / proven Admin UI freeze when adding a Body Image.
+- **Files changed:** `assets/js/body-image-preview.js`, `assets/js/body-image-labels.js`
+- **Root cause:** Both visual helper scripts used a `MutationObserver` and a
+  500 ms `setInterval` to call `apply()`. The same `apply()` functions mutate
+  the DOM they were observing (preview `innerHTML`, labels, and hints), which
+  can create a feedback loop and monopolize the browser main thread after
+  `renderBodyImages()` rebuilds the Body Images list.
+- **Fix:** Removed the document-wide `MutationObserver` and repeating
+  `setInterval` from both helpers. They now refresh only after relevant
+  Add/Remove Image, file-change, or URL-input events. This keeps the visual
+  helpers responsive without changing the editor state or Article Schema v1.
+- **Commits:** `2f50a8ccabaef69054490f883be18e51b6c148da`,
+  `b33c07f5dfbd958b910281e264e40e6b1ddcf41d`
+- **Verification:** The source changes are targeted and preserve the existing
+  Body Image rendering behavior. The repository JavaScript syntax workflow
+  must pass before this is considered fully verified.
+- **Article Schema v1:** unchanged and remains locked.
+
 ## Current Audit Status
 
 ### 🟢 Verified / do not repeat
@@ -149,6 +169,8 @@ a regression is confirmed.
 - Admin Panel loads successfully on the live site.
 - Most Popular metadata fix is complete.
 - Related Stories static image-path fix is implemented.
+- The Body Image Add freeze fix is implemented; live click/file-selection
+  verification is pending deployment/cache refresh.
 - Article Schema v1 is locked and unchanged.
 
 ### 🔴 Needs user input

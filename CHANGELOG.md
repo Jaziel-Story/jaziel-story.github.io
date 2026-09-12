@@ -59,7 +59,7 @@ This file is the project memory for repository changes. Read it before making a 
 - **Status:** DONE / VERIFIED LIVE
 - **File:** `admin/index.html`
 - **Commit:** `2822ba6a33336f0dea59c206fb5a7e147f98f8c5`
-- **Change:** Updated the Admin script URL to `admin.js?v=20260912-4` so the deployed browser would not keep serving an older broken source.
+- **Change:** Updated the Admin script URL to `admin.js?v=20260912-4` so the deployed browser would not keep serving an older broken JavaScript.
 - **Verification:** The user's deployed Admin Dashboard now loads successfully.
 
 ### Cleanup — obsolete runtime loader
@@ -77,6 +77,16 @@ This file is the project memory for repository changes. Read it before making a 
 - **Commit:** `4c1f0d561c39b7c82001e6e7584e1ca1749e1a66`
 - **Verification performed:** The workflow source was reviewed against the exact proven failure mode. No Article Schema v1 fields or structure were changed.
 - **Deployment:** The fix is committed to `main`; a fresh AI Writer request is required to verify the full live path.
+
+### Body Image Add freeze — visual helper loop fix
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P1 / proven Admin UI freeze when adding a Body Image
+- **Files:** `assets/js/body-image-preview.js`, `assets/js/body-image-labels.js`
+- **Root cause:** Both visual helpers used a document-wide `MutationObserver` plus a 500 ms `setInterval` to call `apply()`. Their own `apply()` functions mutate the DOM they observe, including preview `innerHTML`, labels, and hints. After `renderBodyImages()` rebuilt the Body Images list, those mutations could feed the observers back into repeated `apply()` calls and freeze the browser UI.
+- **Fix:** Removed both document-wide `MutationObserver` instances and repeating `setInterval` loops. The helpers now refresh only after relevant Add/Remove Image, file-change, or URL-input events.
+- **Commits:** `2f50a8ccabaef69054490f883be18e51b6c148da`, `b33c07f5dfbd958b910281e264e40e6b1ddcf41d`
+- **Verification:** The changes are targeted and do not modify editor data or Article Schema v1. The repository JavaScript syntax workflow must pass, followed by live testing of Add Image and file selection.
+- **Article Schema v1:** unchanged and remains locked.
 
 ### Documentation rule
 Every repository change must be recorded in this file and summarized in `README.md`. The record must include:
