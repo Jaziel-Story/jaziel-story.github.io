@@ -1,0 +1,47 @@
+name: One-time Admin Parse Repair
+
+on:
+  push:
+    paths:
+      - ".github/workflows/repair-admin-parse.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore known admin source and fix parse error
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show 2efe32fa7baf32503aed7eac57d4fe1fbb039365:admin/admin.js > admin/admin.js
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("admin/admin.js")
+          text = path.read_text(encoding="utf-8")
+          bad = '''toast(`${suggestions.length} suggestion(s) added — remove any you don't want.","info");'''
+          good = '''toast(`${suggestions.length} suggestion(s) added — remove any you don't want.`,"info");'''
+          if bad not in text:
+              raise SystemExit("Expected admin parse-error snippet was not found; refusing to modify the file.")
+          text = text.replace(bad, good, 1)
+          path.write_text(text, encoding="utf-8")
+          PY
+          node --check admin/admin.js
+
+      - name: Commit repaired admin source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "Jaziel-Story"
+          git config user.email "michaelgilroyjitmau2@gmail.com"
+          git add admin/admin.js
+          git commit -m "Fix admin JS parse error"
+          git push
