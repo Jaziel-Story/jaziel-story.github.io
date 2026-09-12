@@ -68,6 +68,16 @@ This file is the project memory for repository changes. Read it before making a 
 - **Commit:** `26c58117d3900eca3bee8ee6a744925b4ac105ce`
 - **Reason:** The Admin Panel now loads the real `admin.js` directly; the temporary runtime loader was removed to avoid hiding future source errors.
 
+### AI Writer P1 — request checkout race fix
+- **Status:** IMPLEMENTED / NEEDS END-TO-END VERIFICATION
+- **Priority:** P1 / proven workflow bug
+- **File:** `.github/workflows/ai-writer.yml`
+- **Root cause:** The Admin Panel could commit the AI request file to `main` and then dispatch the workflow while the workflow run started from the preceding branch SHA. The runner therefore could not see the request file even though the request commit already existed. The proven failed test showed Gemini generation succeeding, followed by failure in result/cleanup because `admin/ai-requests/<request_id>.json` was absent from the checked-out revision.
+- **Fix:** The workflow now fetches `origin/main` after checkout and waits up to 60 seconds for the exact request file to appear there. Once found, it resets the workspace to that latest `main` revision before running Gemini.
+- **Commit:** `4c1f0d561c39b7c82001e6e7584e1ca1749e1a66`
+- **Verification performed:** The workflow source was reviewed against the exact proven failure mode. No Article Schema v1 fields or structure were changed.
+- **Deployment:** The fix is committed to `main`; a fresh AI Writer request is required to verify the full live path.
+
 ### Documentation rule
 Every repository change must be recorded in this file and summarized in `README.md`. The record must include:
 1. Date
