@@ -14,6 +14,16 @@ This file is the project memory for repository changes. Read it before making a 
 
 ## 2026-09-13
 
+### Contact email updated
+- **Status:** DONE / NEEDS LIVE DEPLOYMENT VERIFICATION
+- **Priority:** P2 / replace the public placeholder contact address with the real site-owner email supplied by the user.
+- **File:** `contact.html`
+- **Change:** Replaced `hello@jaziel-story.example` with `michaelgilroyjitmau2@gmail.com` in both the visible email link and its `mailto:` target, and removed the placeholder instruction.
+- **Reason:** The user confirmed the correct contact email.
+- **Commit:** `59069f9ccd8d97bde1dead9fa5859aa3e2d681a6`.
+- **Verification:** GitHub contents update succeeded. No JavaScript, article data, or Article Schema v1 structure was changed.
+- **Deployment:** GitHub Pages/live rendering requires confirmation after deployment.
+
 ### Admin P1–P2 audit hardening
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
 - **Priority:** P1–P2 / prevent known regressions, observer feedback loops, stale browser code, and image/draft inconsistencies.
@@ -132,11 +142,11 @@ Every repository change must be recorded in this file and summarized in `README.
 
 ## Known remaining audit items
 
-### 🔴 Contact email is still a placeholder
+### 🟢 Contact email
 - **File:** `contact.html`
-- **Current value:** `hello@jaziel-story.example`
-- **Status:** NEEDS USER INPUT / NOT FIXED
-- **Reason:** Do not invent an email address.
+- **Value:** `michaelgilroyjitmau2@gmail.com`
+- **Status:** UPDATED / NEEDS LIVE DEPLOYMENT VERIFICATION
+- **Reason:** User supplied and confirmed the real contact email.
 
 ### 🟡 AI request/result JSON privacy
 - **Status:** ARCHITECTURE REVIEW REQUIRED / NOT CHANGED
