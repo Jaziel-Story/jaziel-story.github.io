@@ -1,81 +1,53 @@
-/* =========================================================
-   JAZIEL ADMIN — Body Image Numbering
-   Visual labels only. Article Schema v1 remains unchanged.
-   ========================================================= */
-
+/* JAZIEL ADMIN — Body Image Labels
+   Visual-only helper. Article Schema v1 is unchanged. */
 (() => {
   "use strict";
 
-  function addStyles() {
+  function styles() {
     if (document.getElementById("bodyImageMarkerStyles")) return;
-    const style = document.createElement("style");
-    style.id = "bodyImageMarkerStyles";
-    style.textContent = `
-      .body-image-marker {
-        display:flex;
-        align-items:center;
-        margin:0 0 8px;
-        padding:7px 10px;
-        border-radius:9px;
-        background:var(--text);
-        color:var(--surface);
-        font-size:.82rem;
-        font-weight:700;
-        letter-spacing:.01em;
-      }
-      .body-image-flow-hint {
-        margin:-2px 0 10px;
-        color:var(--muted);
-        font-size:.76rem;
-      }
+    const s = document.createElement("style");
+    s.id = "bodyImageMarkerStyles";
+    s.textContent = `
+      .body-image-marker{display:flex;align-items:center;margin:0 0 8px;padding:8px 10px;border-radius:9px;background:var(--text,#111);color:var(--surface,#fff);font-size:.82rem;font-weight:700;letter-spacing:.01em}
+      .body-image-flow-hint{margin:-2px 0 10px;color:var(--muted,#777);font-size:.76rem}
     `;
-    document.head.appendChild(style);
+    document.head.appendChild(s);
   }
 
-  function labelBodyImages() {
-    const list = document.querySelector("#bodyImagesList");
-    if (!list) return;
-
-    [...list.querySelectorAll(":scope > .repeat-item")].forEach((item, index) => {
+  function apply() {
+    const list = document.getElementById("bodyImagesList");
+    if (!list) return false;
+    [...list.children].filter(el => el.classList && el.classList.contains("repeat-item")).forEach((item, i) => {
       let marker = item.querySelector(":scope > .body-image-marker");
       if (!marker) {
         marker = document.createElement("div");
         marker.className = "body-image-marker";
         item.prepend(marker);
       }
-      marker.textContent = `Body Image ${index + 1}`;
+      marker.textContent = `Body Image ${i + 1}`;
 
       let hint = item.querySelector(":scope > .body-image-flow-hint");
       if (!hint) {
         hint = document.createElement("p");
         hint.className = "body-image-flow-hint";
-        item.insertBefore(hint, item.querySelector(".field") || null);
+        const field = item.querySelector(":scope > .field");
+        if (field) item.insertBefore(hint, field); else item.appendChild(hint);
       }
-      hint.textContent = `Displayed after Heading ${index + 1}`;
+      hint.textContent = `Displayed after Heading ${i + 1}`;
     });
-  }
-
-  function watchList(list) {
-    if (!list || list.dataset.bodyImageLabelsBound === "1") return;
-    list.dataset.bodyImageLabelsBound = "1";
-    labelBodyImages();
-    new MutationObserver(labelBodyImages).observe(list, { childList: true, subtree: true });
-  }
-
-  function scan() {
-    addStyles();
-    const list = document.querySelector("#bodyImagesList");
-    if (list) watchList(list);
+    return true;
   }
 
   function init() {
-    scan();
-    new MutationObserver(scan).observe(document.body, { childList: true, subtree: true });
+    styles();
+    apply();
+    document.addEventListener("click", () => setTimeout(apply, 0), true);
+    document.addEventListener("change", () => setTimeout(apply, 0), true);
+    const observer = new MutationObserver(() => apply());
+    observer.observe(document.body, { childList: true, subtree: true });
+    setInterval(apply, 500);
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init, { once: true });
-  } else {
-    init();
-  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once:true });
+  else init();
 })();
