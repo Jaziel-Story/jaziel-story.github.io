@@ -92,27 +92,24 @@ regression is confirmed.
 
 - **Priority:** P1 / user-reported Preview refresh/stuck behavior and missing
   Body Image previews for repository-relative paths.
-- **Finding:** `admin-preview-section-mapping.js` introduced an additional
-  `MutationObserver` on `#previewRoot`. This observer was not necessary because
-  the core Admin Preview renderer already maps `images[i]` to `sections[i]` in
-  the locked Schema v1 parallel-array model. The extra observer added DOM work
-  exactly when Preview was opening and was therefore removed to eliminate a
-  possible Preview feedback/stability problem.
+- **Finding:** The additional `admin-preview-section-mapping.js` helper used a
+  `MutationObserver` on `#previewRoot`. Further audit confirmed the core
+  `admin.js` Preview renderer already maps `images[i]` to `sections[i]` in the
+  locked Schema v1 parallel-array model, so the extra observer was unnecessary.
 - **Fix:** Removed `assets/js/admin-preview-section-mapping.js` and its script
-  include from `admin/index.html`. `admin.js` remains untouched.
+  include from `admin/index.html`. `admin/admin.js` remains untouched.
 - **Fix:** Updated `assets/js/body-image-preview.js` so relative repository
-  paths such as `assets/images/articles/...` resolve to the deployed site URL,
-  instead of being rejected because they are not absolute `http/https` URLs.
+  paths such as `assets/images/articles/...` resolve to the deployed site
+  origin instead of being rejected as invalid because they are not absolute
+  HTTP URLs.
 - **Files changed:** `admin/index.html`, `assets/js/body-image-preview.js`.
 - **File removed:** `assets/js/admin-preview-section-mapping.js`.
 - **Commits:**
   - `3bc626b6f7521f1bf96512f5585dd28cc4b1836d` — accept relative Body Image paths
   - `9bac5ef22f98f850c97079df431ea0c63be4da90` — remove Preview observer and bump cache
   - `56e7a982294e438464c4f0a91a26a147fc228753` — remove redundant mapping helper
-- **Verification:** Source reviewed against the reported behavior. The new
-  Body Image helper remains visual-only and does not alter article data or
-  Schema v1. JavaScript syntax verification and live Preview testing are still
-  required.
+- **Verification:** Source reviewed against the reported behavior. JavaScript
+  syntax verification and live Preview/Edit testing are still required.
 - **Deployment:** NEEDS GITHUB PAGES DEPLOYMENT + USER LIVE VERIFICATION.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 - **Article Schema v1:** unchanged and remains locked.
