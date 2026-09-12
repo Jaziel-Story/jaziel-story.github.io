@@ -14,6 +14,18 @@ This file is the project memory for repository changes. Read it before making a 
 
 ## 2026-09-12
 
+### Admin Preview image order fix
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P1 / user screenshot confirmed existing body images were rendered after Section 3 instead of in section order.
+- **Finding:** The live Preview screenshot showed both existing `figure.article-figure` elements after the third section. The missing Section 3 image is intentionally postponed. Desired behavior is therefore image 1 after Section 1, image 2 after Section 2, and no image after Section 3 until a third image is added.
+- **Fix:** Added `assets/js/admin-preview-order-fix.js`. The helper runs once after the Preview button is clicked, collects Preview `h2` section headings and existing body figures, removes the figures temporarily, then inserts figure `i` immediately before heading `i+1`. No `MutationObserver` is used.
+- **Fix:** Added the helper to `admin/index.html` with a cache-busted version.
+- **Files changed:** `assets/js/admin/index.html`, `assets/js/admin-preview-order-fix.js`.
+- **Commits:** `8e8c3af2288eac967a47452fd5ae6f5e96c017f0` — helper; `d134c30290e30a3fa285b54899812145f659c47a` — loader.
+- **Verification:** Helper JavaScript syntax was checked before commit. The user-provided live screenshot was used to confirm the ordering defect. Post-deploy live verification is still required.
+- **Deployment:** NEEDS GITHUB PAGES DEPLOYMENT + USER LIVE VERIFICATION.
+- **Article Schema v1:** unchanged and remains locked.
+
 ### Admin Preview stability + Body Image relative-path fix
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
 - **Priority:** P1 / user-reported Preview refresh/stuck behavior and missing Body Image previews for repository-relative paths.
