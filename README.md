@@ -15,15 +15,35 @@ category.html      Category browsing
 about.html, contact.html, privacy.html, terms.html
 articles.json      All article data (root of the repo — do not move)
 assets/css/style.css  Shared stylesheet
+assets/css/article-pagination.css  Article pagination UI
 assets/js/main.js     Shared frontend logic (reads articles.json)
+assets/js/article-pagination.js  Article pagination helper (max 2 sections/page)
 assets/js/home-featured-minimal.js  Lightweight homepage presentation helper
 assets/js/home-latest-final.js      Single homepage data/render loader
 assets/images/articles/  Article images (cover + body), uploaded via the Admin Panel
+assets/images/og/         Website Open Graph cover image
 ```
 
 The homepage intentionally uses one dedicated data/render loader so
 `main.js` does not initialize the same homepage twice. Article Schema v1
 remains unchanged and locked.
+
+## Article pagination
+
+Articles now use a UI-only pagination layer without changing Article Schema v1.
+When an article has more than two sections, the article is split into pages with
+a maximum of **2 sections per page**. The first page is the default when no
+`page` query parameter is present.
+
+- 1–2 sections → 1 page, no pagination.
+- 3–4 sections → 2 pages.
+- 5–6 sections → 3 pages.
+- 7–8 sections → 4 pages.
+- Page URLs use `?page=1`, `?page=2`, `?page=3`, etc.
+- Each non-final page provides a **Continue Reading** button.
+- Numbered page links show **Page X of Y**.
+- Section images remain mapped sequentially: Section 1 → Image 1, Section 2 → Image 2, and so on.
+- Static generated article pages and the dynamic article view use the same pagination rule.
 
 ## Admin Panel
 
@@ -84,6 +104,31 @@ update that single constant — no other file needs to change.
 `CHANGELOG.md`. Before making another fix, check these logs and the recent Git
 commits first. Do not repeat a change that is already marked DONE unless a
 regression is confirmed.
+
+### 2026-09-13 — Article pagination implemented
+
+- **Priority:** P1 / improve long-article readability and continuation flow while keeping Article Schema v1 unchanged.
+- **Files changed:** `assets/js/article-pagination.js`, `assets/css/article-pagination.css`, `article.html`, `.github/workflows/generate-static-articles.yml`.
+- **Change:** Added max-2-sections-per-page pagination, default Page 1 behavior, numbered page navigation, Page X of Y status, Continue Reading CTA, sequential section/image mapping, and static-page generation support.
+- **URL behavior:** Static article pages use `articles/{slug}.html?page=N`; Page 1 is also the default when `page` is absent. The dynamic fallback uses `article.html?slug={slug}&page=N`.
+- **SEO:** Static generated pages retain the base article canonical at generation time; the pagination helper updates the canonical/OG URL for the active page in the browser.
+- **Important cleanup:** Removed the stale `assets/js/link-fix.js` script reference from `article.html`; the obsolete helper remains deleted and is not restored.
+- **Reason:** User approved pagination design A+B+C and the recommendation that missing `page` defaults to Page 1.
+- **Commits:** `b6c2362564b9f405618b5411219d9f2c791d1251`, `ba70730c3ed0cdea69751206f15b96d1d48feca1`, `6eacf514d273c20c6785d9fed2f0b446126663ce`, `35962fc55d94eaad8bb999511648bc355a1accf8`, `bf8d4609cf17b22b695d493e4e4b86d55e6bdfba`.
+- **Verification:** `node --check` passed for the pagination helper and generator test script. A local fixture generator test confirmed 5 sections produce 3 page containers, Continue Reading controls, Page 1 of 3, and sequential images 1–5. Fresh GitHub Actions and live Pages verification remain pending.
+- **Deployment:** GitHub Actions/static-page regeneration and live browser verification pending.
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
+
+### 2026-09-13 — Website OG cover metadata
+
+- **Priority:** P2 / add the website Open Graph/social sharing cover.
+- **Files changed:** `assets/images/og/jaziel-og-cover.png`, `index.html`.
+- **Change:** Added the Jaziel OG cover image and website-level Open Graph/Twitter metadata pointing to it.
+- **Reason:** User requested a website OG cover.
+- **Commit:** `afcfa4ad5f7301fc319c6f0c722792268393cbb2` for the metadata update; image rename/addition was committed immediately before it in `99f919e87a390aeeb266942a9472f0102f9cc4c1`.
+- **Verification:** User confirmed the OG image appears successfully. Source metadata was also checked against the repository file path.
+- **Deployment:** User confirmed the image appears; broader social-platform cache verification is not claimed.
+- **Status:** DONE / USER VERIFIED.
 
 ### 2026-09-13 — Contact email updated
 
@@ -168,6 +213,7 @@ These are protected baseline fixes. If a future bug appears, **do not immediatel
 - Article Schema v1 is locked and unchanged.
 - Admin Preview has been checked by the user and confirmed safe.
 - Public Contact email is now set to the user-confirmed email address.
+- Website OG cover image was confirmed visible by the user.
 
 ### 🟡 Needs live verification
 
@@ -175,6 +221,7 @@ These are protected baseline fixes. If a future bug appears, **do not immediatel
 - Homepage loader/observer cleanup.
 - AI Writer P1 workflow fix.
 - GitHub Pages deployment of the latest contact email change.
+- Article pagination across 1-, 2-, 3-, 4-, 5-, and 6-section articles.
 
 ### 🟠 AI Writer privacy / E2E review pending
 
