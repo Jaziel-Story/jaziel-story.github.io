@@ -60,7 +60,7 @@
     const isLast = current === total;
     const meta = [article.readTime, formatDate(article.date)].filter(Boolean).join(" · ");
     const dek = article.dek || article.description || "";
-    const coverHTML = article.cover
+    const coverHTML = isFirst && article.cover
       ? `<div class="article-cover"><img src="${escapeAttribute(article.cover)}" alt="${escapeAttribute(article.title || "")}" loading="lazy" decoding="async"></div>`
       : "";
 
@@ -69,6 +69,7 @@
     const nextHref = hrefForPage(current + 1);
 
     let body = "";
+    if (isFirst) body += coverHTML;
     if (isFirst && article.intro) body += `<p>${escapeHTML(article.intro)}</p>`;
     if (isFirst) body += '<div class="ad-slot article-ad-slot" aria-label="Advertisement"></div>';
 
@@ -99,7 +100,6 @@
         <h1 class="article-title">${escapeHTML(article.title || "")}</h1>
         ${dek ? `<p class="article-dek">${escapeHTML(dek)}</p>` : ""}
         <div class="story-meta">${escapeHTML(meta)}</div>
-        ${coverHTML}
         <div class="article-body">${body}</div>
         ${paginationHTML(current, total, hrefForPage)}
         ${tagsHTML}
