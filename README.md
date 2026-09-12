@@ -88,6 +88,79 @@ update that single constant — no other file needs to change.
 commits first. Do not repeat a change that is already marked DONE unless a
 regression is confirmed.
 
+### 2026-09-13 — Admin P1–P2 audit hardening
+
+- **Priority:** P1–P2 / prevent known regressions, observer feedback loops,
+  stale browser code, and image/draft inconsistencies.
+- **P1 fix:** `.github/workflows/generate-static-articles.yml` no longer creates
+  or injects the obsolete `link-fix.js`. This prevents a future `articles.json`
+  publish from silently restoring the removed global link-fixing observer.
+- **P1 fix:** `assets/js/admin-section-labels.js` no longer uses a persistent
+  `MutationObserver`. Section labels refresh only after section add/remove
+  events, preventing a label-update/DOM-observer feedback loop.
+- **P1 fix:** `assets/js/admin-preview-order-fix.js` now targets `#btnPreview`
+  and retries for a few animation frames so asynchronous Preview rendering is
+  handled without a persistent observer or interval.
+- **P1/P2 fix:** `assets/js/ai-writer-category-fix.js` no longer observes the
+  whole document. Its temporary observer is scoped to the active AI status/view
+  and disconnects after success or failure.
+- **P2 fix:** `assets/js/image-manager.js` now accepts safe Jaziel repository
+  image paths as well as HTTP(S) image URLs, matching the Admin renderer and
+  body-image preview behavior. It also keeps the existing 10 MB/type guard.
+- **P2 fix:** draft image persistence now clears stale body-image IndexedDB
+  entries by draft-key prefix before saving the current selection, preventing
+  removed/reordered images from surviving into a later draft restore.
+- **Cache protection:** changed Admin helper scripts received cache-busted
+  query versions in `admin/index.html` so browsers do not continue executing
+  older helper code after deployment.
+- **Schema:** Article Schema v1 was not changed.
+- **Files changed:** `.github/workflows/generate-static-articles.yml`,
+  `assets/js/admin-section-labels.js`, `assets/js/ai-writer-category-fix.js`,
+  `assets/js/image-manager.js`, `assets/js/admin-preview-order-fix.js`,
+  `admin/index.html`.
+- **Commits:**
+  - `09cb3be8d3373c69ff70d84bac692f690d473ab0` — stop generator restoring link-fix
+  - `4d111022dda3645763322d7970f47b07a785193e` — remove section label observer loop
+  - `e8d43ef9541105c131ade130b2027f4705d8b999` — scope AI category observer
+  - `b6da7f8bf41f125300549f2d983a12248db1449f` — harden image validation/draft cleanup
+  - `b215a6488313b57637758587d40f242cf3a8b50a` — harden Preview async ordering
+  - `8b80a7dccc7c59c10a86c363dfdfa27d6f2e4d60` — cache-bust audited Admin helpers
+- **Verification:** Source-level audit completed. The repository's JavaScript
+  validation workflow is configured to run `node --check` over all `.js` files;
+  a fresh workflow run and live Admin E2E test are still required before these
+  changes are marked fully verified.
+- **Deployment:** GitHub Pages deployment/live Admin verification pending.
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
+
+### Protected fixes register — do not revert without a confirmed regression
+
+These fixes are now part of the repository's protected baseline. If a future
+bug appears, **do not immediately modify or remove these files because they
+look related**. First reproduce the bug, inspect the current version, check
+this README and `CHANGELOG.md`, and compare the relevant commit before changing
+anything.
+
+- `index.html` + `home-featured-minimal.js` + `home-latest-final.js` — homepage
+  loader/observer consolidation. Do not restore deleted competing loaders.
+- `assets/js/admin-section-labels.js` — event-driven labels; do not restore a
+  document/subtree MutationObserver without a reproduced regression.
+- `assets/js/ai-writer-category-fix.js` — scoped active-generation watch; do not
+  restore a document-wide observer.
+- `assets/js/admin-preview-order-fix.js` — one-shot animation-frame Preview
+  repair; do not replace it with a permanent observer/interval without proof.
+- `assets/js/image-manager.js` + `assets/js/body-image-preview.js` — image
+  validation/preview compatibility for repository paths and local files.
+- `.github/workflows/generate-static-articles.yml` — must not recreate
+  `assets/js/link-fix.js` or inject it into pages.
+- `articles.json` — single source of truth and Article Schema v1; do not change
+  its structure as a workaround for an Admin UI bug.
+
+**Bug investigation rule:** When a new bug is reported, first identify whether
+it is a regression in one of the protected fixes or an independent defect.
+Use the smallest targeted fix. Record the affected protected commit, the new
+commit, verification, deployment result, and whether the old fix remains
+intact. Never "clean up" a protected fix merely because it is nearby code.
+
 ### 2026-09-12 — Admin Preview image order fix
 
 - **Priority:** P1 / user screenshot confirmed Body Images were rendered after
@@ -118,8 +191,9 @@ regression is confirmed.
   Body Image previews for repository-relative paths.
 - **Finding:** The additional `admin-preview-section-mapping.js` helper used a
   `MutationObserver` on `#previewRoot`. Further audit confirmed the core
-  `admin.js` Preview renderer already maps `images[i]` to `sections[i]` in the
-  locked Schema v1 parallel-array model, so the extra observer was unnecessary.
+  `admin.js` Preview renderer was not producing the required live section/image
+  order, so the extra observer approach was removed and replaced by the
+  one-shot order fix recorded above.
 - **Fix:** Removed `assets/js/admin-preview-section-mapping.js` and its script
   include from `admin/index.html`. `admin/admin.js` remains untouched.
 - **Fix:** Updated `assets/js/body-image-preview.js` so relative repository
@@ -169,10 +243,11 @@ regression is confirmed.
 
 ### 🟡 Needs live verification
 
-- Admin Preview image section ordering fix.
+- Admin Preview image section ordering fix and its latest async-render hardening.
 - Admin Preview stability fix and Body Image relative-path preview fix.
 - Homepage duplicate-loader/observer cleanup.
 - AI Writer P1 workflow fix.
+- New P1–P2 observer/image/draft hardening from 2026-09-13.
 
 ### 🔴 Needs user input
 
@@ -184,6 +259,10 @@ regression is confirmed.
 
 - The P1 workflow fix is implemented but must be tested with a new AI Writer
   request before it is marked fully verified.
+- AI request/result files are still repository-backed and therefore public in
+  a public repository. This remains an architecture/privacy consideration;
+  it was not changed in this audit because moving the transport would require
+  a separate design decision and could break the current AI flow.
 
 ## Change-control rule
 
