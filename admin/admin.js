@@ -339,15 +339,15 @@ function uniqueCategories(articles) {
 }
 
 async function saveArticlesArray(newArray, commitMessage) {
-  // Always re-fetch immediately before writing, so we publish against
-  // the current sha and don't silently clobber a change made elsewhere.
+  if (!state.articlesLoaded || !state.articlesSha) throw new Error("Articles are not loaded. Reload the admin panel before publishing.");
+  const baselineSha = state.articlesSha;
   const latest = await ghGetFile(ARTICLES_PATH);
   if (!latest) throw new Error("articles.json could not be found — refusing to publish.");
-
+  if (latest.sha !== baselineSha) throw new Error("Publish conflict: articles.json changed elsewhere after this editor loaded it. Reload the Articles list, reopen the article, and publish again so no newer changes are overwritten.");
   const payload = { articles: newArray };
-  const contentStr = JSON.stringify(payload, null, 2) + "\n";
+  const contentStr = JSON.stringify(payload, null, 2) + "
+";
   const result = await ghPutFile(ARTICLES_PATH, utf8ToB64(contentStr), commitMessage, latest.sha);
-
   state.articles = newArray;
   state.articlesSha = result.content ? result.content.sha : null;
   state.categories = uniqueCategories(newArray);
