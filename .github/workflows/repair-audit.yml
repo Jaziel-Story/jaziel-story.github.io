@@ -15,23 +15,24 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-
           # HTTPS-only image URLs.
-          p=Path('admin/admin.js'); s=p.read_text()
-          s,n=re.subn(r'function isValidImageUrl\(value\) \{.*?\n\}', 'function isValidImageUrl(value) {\n  try { return new URL(String(value || "").trim()).protocol === "https:"; }\n  catch { return false; }\n}', s, count=1, flags=re.S)
-          if n!=1: raise SystemExit('admin URL validator not found')
-          p.write_text(s)
+          for name, fn_name in [('admin/admin.js','isValidImageUrl'),('assets/js/image-manager.js','validUrl')]:
+            p=Path(name); s=p.read_text()
+            if fn_name == 'isValidImageUrl':
+              pattern=r'function isValidImageUrl\(value\) \{.*?\n\}'
+              replacement='function isValidImageUrl(value) {\n  try { return new URL(String(value || "").trim()).protocol === "https:"; }\n  catch { return false; }\n}'
+            else:
+              pattern=r'function validUrl\(value\) \{.*?\n\}'
+              replacement='function validUrl(value) {\n    try { return new URL(String(value || "").trim()).protocol === "https:"; }\n    catch { return false; }\n  }'
+            s,n=re.subn(pattern,replacement,s,count=1,flags=re.S)
+            if n!=1: raise SystemExit(name+' URL validator not found')
+            p.write_text(s)
 
-          p=Path('assets/js/image-manager.js'); s=p.read_text()
-          s,n=re.subn(r'function validUrl\(value\) \{.*?\n\}', 'function validUrl(value) {\n    try {\n      return new URL(String(value || "").trim()).protocol === "https:";\n    } catch {\n      return false;\n    }\n  }', s, count=1, flags=re.S)
-          if n!=1: raise SystemExit('image-manager URL validator not found')
-          p.write_text(s)
-
-          # Truthful OG image type; omit unsupported hardcoded dimensions.
+          # Truthful OG image type; remove false hardcoded dimensions.
           p=Path('.github/workflows/generate-static-articles.yml'); s=p.read_text()
           if 'const ogType=' not in s:
             marker="const canonical=`${site}articles/${a.slug}.html`, desc=a.dek||a.description||'', og=a.og?.image||a.cover||'';"
-            if marker not in s: raise SystemExit('static OG anchor not found')
+            if marker not in s: raise SystemExit('static generator OG anchor not found')
             extra=' const ext=String(og).split("?")[0].split(".").pop().toLowerCase(); const ogType=({jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp",gif:"image/gif"})[ext]||"";'
             s=s.replace(marker,marker+extra,1)
           s=s.replace('<meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">','${ogType?`<meta property="og:image:type" content="${ogType}">`:""}')
@@ -39,7 +40,7 @@ jobs:
             s=s.replace('<script src="../assets/js/main.js" defer></script></head>','<script src="../assets/js/main.js" defer></script><script src="../assets/js/related-articles.js" defer></script></head>')
           p.write_text(s)
 
-          # Delete request file after every AI run so raw input is not left public.
+          # AI request JSON is temporary; remove it after success or failure.
           p=Path('.github/workflows/ai-writer.yml'); s=p.read_text()
           if 'Remove temporary request file' not in s:
             s=s.replace('      - name: Commit result','      - name: Remove temporary request file\n        if: always()\n        run: rm -f "admin/ai-requests/${{ github.event.inputs.request_id }}.json"\n\n      - name: Commit result',1)
@@ -51,4 +52,7 @@ jobs:
           git config user.name "jaziel-repair[bot]"
           git config user.email "actions@users.noreply.github.com"
           git add -A
-          if git diff --cached --quiet; then echo "No P1 changes."; else git commit -m "Fix P1 metadata and AI cleanup"; git push; fi
+          if git diff --cached --quiet; then echo "No P1 changes."; exit 0; fi
+          git commit -m "Fix P1 metadata and AI request cleanup"
+          git pull --rebase origin main
+          git push origin HEAD:main
