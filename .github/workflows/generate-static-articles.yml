@@ -6,6 +6,7 @@ on:
       - "articles.json"
       - ".github/workflows/generate-static-articles.yml"
       - "assets/js/related-articles.js"
+      - "assets/js/article-pagination.js"
   workflow_dispatch:
 
 permissions:
@@ -38,23 +39,38 @@ jobs:
           const validSlugs = new Set((data.articles||[]).map(a => a && a.slug).filter(Boolean));
           for (const name of fs.readdirSync('articles')) if (name.endsWith('.html') && !validSlugs.has(name.slice(0, -5))) fs.unlinkSync(`articles/${name}`);
           for (const a of (data.articles||[])) {
-            let body=a.intro?`<p>${esc(a.intro)}</p>`:''; let ii=0;
             const sections = a.sections || [];
-            for (let si=0; si<sections.length; si++) {
-              const s = sections[si];
-              if(s.heading)body+=`<h2>${esc(s.heading)}</h2>`;
-              body+=(s.paragraphs||[]).map(p=>`<p>${esc(p)}</p>`).join('');
-              if(a.images?.[ii])body+=img(a.images[ii++]);
-              if ((si + 1) % 2 === 0 && si < sections.length - 1) body += ad();
+            const pageCount = Math.max(1, Math.ceil(sections.length / 2));
+            let pagesBody = '';
+            for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+              const start = pageIndex * 2;
+              const pageSections = sections.slice(start, start + 2);
+              let pageBody = '';
+              if (pageIndex === 0 && a.intro) pageBody += `<p>${esc(a.intro)}</p>`;
+              if (pageIndex === 0) pageBody += ad();
+              for (let si = 0; si < pageSections.length; si++) {
+                const absoluteIndex = start + si;
+                const s = pageSections[si];
+                if(s.heading) pageBody += `<h2>${esc(s.heading)}</h2>`;
+                pageBody += (s.paragraphs||[]).map(p=>`<p>${esc(p)}</p>`).join('');
+                if(a.images?.[absoluteIndex]) pageBody += img(a.images[absoluteIndex]);
+                if(si < pageSections.length - 1) pageBody += ad();
+              }
+              if (pageIndex === pageCount - 1) {
+                if(a.bibleVerse?.text) pageBody += `<blockquote class="verse-block"><p>${esc(a.bibleVerse.text)}</p>${a.bibleVerse.reference?`<cite>${esc(a.bibleVerse.reference)}</cite>`:''}</blockquote>`;
+                if(a.closing) pageBody += `<p class="article-closing">${esc(a.closing)}</p>`;
+                pageBody += ad();
+              } else {
+                pageBody += `<a class="article-continue" href="?page=${pageIndex + 2}">Continue Reading <span aria-hidden="true">→</span></a>`;
+              }
+              pagesBody += `<section class="article-page-content${pageIndex === 0 ? ' is-active' : ''}" data-article-page="${pageIndex + 1}"${pageIndex === 0 ? '' : ' hidden'}>${pageBody}</section>`;
             }
-            while(ii<(a.images||[]).length)body+=img(a.images[ii++]);
-            if(a.bibleVerse?.text)body+=`<blockquote class="verse-block"><p>${esc(a.bibleVerse.text)}</p>${a.bibleVerse.reference?`<cite>${esc(a.bibleVerse.reference)}</cite>`:''}</blockquote>`;
-            if(a.closing)body+=`<p class="article-closing">${esc(a.closing)}</p>`;
+            const pagination = pageCount > 1 ? `<nav class="article-pagination" aria-label="Article pages"><div class="article-page-status">Page 1 of ${pageCount}</div><div class="article-page-numbers">${Array.from({length:pageCount},(_,i)=>`<a class="article-page-number${i===0?' active':''}" href="${i===0?'?':`?page=${i+1}`}" aria-current="${i===0?'page':'false'}">${i+1}</a>`).join('')}</div></nav>` : '';
             const canonical=`${site}articles/${a.slug}.html`, desc=a.dek||a.description||'', og=a.og?.image||a.cover||'';
             const ext=String(og).split('?')[0].split('.').pop().toLowerCase();
             const ogType=({jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif'})[ext]||'';
             const ogTypeMeta=ogType?`<meta property="og:image:type" content="${ogType}">`:'';
-            const page=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="${esc(desc)}"><meta name="theme-color" content="#111111"><title>${esc((a.seo?.title)||`${a.title||'Story'} | Jaziel`)}</title><link rel="canonical" href="${esc(canonical)}"><meta property="og:type" content="article"><meta property="og:site_name" content="Jaziel"><meta property="og:title" content="${esc(a.og?.title||a.title||'')}"><meta property="og:description" content="${esc(a.og?.description||desc)}"><meta property="og:image" content="${esc(abs(og))}"><meta property="og:url" content="${esc(canonical)}"><meta property="og:image:alt" content="${esc(a.title||'')}">${ogTypeMeta}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(a.og?.title||a.title||'')}"><meta name="twitter:description" content="${esc(a.og?.description||desc)}"><meta name="twitter:image" content="${esc(abs(og))}"><link rel="stylesheet" href="../assets/css/style.css"><script src="../assets/js/main.js" defer></script><script src="../assets/js/related-articles.js" defer></script></head><body data-page="static-article"><header class="site-header"><div class="container header-inner"><a class="logo" href="../index.html">JAZIEL</a><div class="header-actions"><button class="icon-button" type="button" aria-label="Search">⌕</button></div></div></header><main><div class="container"><article class="article"><p class="back-link"><a href="../index.html">← Back to Jaziel</a></p>${a.category?`<a class="story-category" href="../category.html?category=${encodeURIComponent(a.category)}">${esc(a.category)}</a>`:''}<h1 class="article-title">${esc(a.title||'')}</h1>${a.dek?`<p class="article-dek">${esc(a.dek)}</p>`:''}<div class="story-meta">${esc([a.readTime,a.date].filter(Boolean).join(' · '))}</div>${a.cover?`<div class="article-cover"><img src="${esc(rel(a.cover))}" alt="${esc(a.title||'')}" loading="lazy" decoding="async"></div>`:''}${ad()}<div class="article-body">${body}${ad()}</div></article></div></main><footer class="site-footer"><div class="container footer-inner"><div><div class="footer-logo">JAZIEL</div><div>Trending stories, viral moments and news from around the world.</div></div><div class="footer-links"><a href="../about.html">About</a><a href="../contact.html">Contact</a><a href="../privacy.html">Privacy</a><a href="../terms.html">Terms</a></div><div>© 2026 Jaziel. All rights reserved.</div></div></footer></body></html>`;
+            const page=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="${esc(desc)}"><meta name="theme-color" content="#111111"><title>${esc((a.seo?.title)||`${a.title||'Story'} | Jaziel`)}</title><link rel="canonical" href="${esc(canonical)}"><meta property="og:type" content="article"><meta property="og:site_name" content="Jaziel"><meta property="og:title" content="${esc(a.og?.title||a.title||'')}"><meta property="og:description" content="${esc(a.og?.description||desc)}"><meta property="og:image" content="${esc(abs(og))}"><meta property="og:url" content="${esc(canonical)}"><meta property="og:image:alt" content="${esc(a.title||'')}">${ogTypeMeta}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(a.og?.title||a.title||'')}"><meta name="twitter:description" content="${esc(a.og?.description||desc)}"><meta name="twitter:image" content="${esc(abs(og))}"><link rel="stylesheet" href="../assets/css/style.css"><link rel="stylesheet" href="../assets/css/article-pagination.css"><script src="../assets/js/main.js" defer></script><script src="../assets/js/article-pagination.js" defer></script><script src="../assets/js/related-articles.js" defer></script></head><body data-page="static-article"><header class="site-header"><div class="container header-inner"><a class="logo" href="../index.html">JAZIEL</a><div class="header-actions"><button class="icon-button" type="button" aria-label="Search">⌕</button></div></div></header><main><div class="container"><article class="article" data-slug="${esc(a.slug)}"><p class="back-link"><a href="../index.html">← Back to Jaziel</a></p>${a.category?`<a class="story-category" href="../category.html?category=${encodeURIComponent(a.category)}">${esc(a.category)}</a>`:''}<h1 class="article-title">${esc(a.title||'')}</h1>${a.dek?`<p class="article-dek">${esc(a.dek)}</p>`:''}<div class="story-meta">${esc([a.readTime,a.date].filter(Boolean).join(' · '))}</div>${a.cover?`<div class="article-cover"><img src="${esc(rel(a.cover))}" alt="${esc(a.title||'')}" loading="lazy" decoding="async"></div>`:''}${pagesBody}${pagination}</article></div></main><footer class="site-footer"><div class="container footer-inner"><div><div class="footer-logo">JAZIEL</div><div>Trending stories, viral moments and news from around the world.</div></div><div class="footer-links"><a href="../about.html">About</a><a href="../contact.html">Contact</a><a href="../privacy.html">Privacy</a><a href="../terms.html">Terms</a></div><div>© 2026 Jaziel. All rights reserved.</div></div></footer></body></html>`;
             fs.writeFileSync(`articles/${a.slug}.html`,page);
           }
           NODE
