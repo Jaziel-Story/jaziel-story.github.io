@@ -7,6 +7,14 @@
 (() => {
   "use strict";
 
+  function applyMobileLayoutFix() {
+    if (document.getElementById("jaziel-mobile-layout-fix")) return;
+    const style = document.createElement("style");
+    style.id = "jaziel-mobile-layout-fix";
+    style.textContent = "@media (max-width:759px){html,body{max-width:100%;overflow-x:hidden}.container{width:calc(100% - 44px);max-width:100%;min-width:0;margin-left:auto;margin-right:auto}.featured-card{width:100%;max-width:100%;min-width:0;margin-left:0;margin-right:0}.featured-image,.featured-overlay{width:100%;max-width:100%}.featured-content{width:100%;min-width:0;padding:20px}.featured-content h2{max-width:88%;overflow-wrap:anywhere}}";
+    document.head.appendChild(style);
+  }
+
   function applyMinimalFeatured() {
     const card = document.querySelector(".featured-card");
     if (!card) return;
@@ -26,6 +34,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    applyMobileLayoutFix();
     applyMinimalFeatured();
 
     const card = document.querySelector(".featured-card");
