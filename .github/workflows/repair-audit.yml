@@ -10,66 +10,49 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Fix P1 metadata and cleanup
+      - name: Apply P1 fixes
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
-          for name in ['admin/admin.js','assets/js/image-manager.js']:
-            p=Path(name); s=p.read_text()
-            # admin uses isValidImageUrl; image-manager uses validUrl.
-            if 'function isValidImageUrl' in s:
-              s,n=re.subn(r'function isValidImageUrl\(value\) \{.*?\n\}', 'function isValidImageUrl(value) {\n  try { return new URL(String(value || "").trim()).protocol === "https:"; }\n  catch { return false; }\n}', s, count=1, flags=re.S)
-              if n!=1: raise SystemExit(name+' admin URL validator failed')
-            elif 'function validUrl' in s:
-              s,n=re.subn(r'function validUrl\(value\) \{.*?\n\}', 'function validUrl(value) {\n    try {\n      return new URL(String(value || "").trim()).protocol === "https:";\n    } catch {\n      return false;\n    }\n  }', s, count=1, flags=re.S)
-              if n!=1: raise SystemExit(name+' image URL validator failed')
-            else: raise SystemExit(name+' URL validator not found')
-            p.write_text(s)
 
-          p=Path('.github/workflows/generate-static-articles.yml'); s=p.read_text()
-          if 'const ogType=' not in s:
-            anchor=r'const canonical=`\$\{site\}articles/\$\{a\.slug\}\.html`, desc=a\.dek\|\|a\.description\|\|\x27\x27, og=a\.og\?\.image\|\|a\.cover\|\|\x27\x27;'
-            repl='\\g<0> const ext=String(og).split("?")[0].split(".").pop().toLowerCase(); const ogType=({jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp",gif:"image/gif"})[ext]||"";'
-            s,n=re.subn(anchor,repl,s,count=1)
-            if n!=1: raise SystemExit('static OG variable anchor not found')
-          s=s.replace('<meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">','${ogType?`<meta property="og:image:type" content="${ogType}">`:""}')
-          s=s.replace('<script src="../assets/js/main.js" defer></script></head>','<script src="../assets/js/main.js" defer></script><script src="../assets/js/related-articles.js" defer></script></head>')
+          # HTTPS-only external image URLs.
+          p=Path('admin/admin.js'); s=p.read_text()
+          s,n=re.subn(r'function isValidImageUrl\(value\) \{.*?\n\}', 'function isValidImageUrl(value) {\n  try { return new URL(String(value || "").trim()).protocol === "https:"; }\n  catch { return false; }\n}', s, count=1, flags=re.S)
+          if n!=1: raise SystemExit('admin URL validator not found')
           p.write_text(s)
 
+          p=Path('assets/js/image-manager.js'); s=p.read_text()
+          s,n=re.subn(r'function validUrl\(value\) \{.*?\n\}', 'function validUrl(value) {\n    try {\n      return new URL(String(value || "").trim()).protocol === "https:";\n    } catch {\n      return false;\n    }\n  }', s, count=1, flags=re.S)
+          if n!=1: raise SystemExit('image-manager URL validator not found')
+          p.write_text(s)
+
+          # Static generator: OG image type follows the actual file extension; remove false dimensions.
+          p=Path('.github/workflows/generate-static-articles.yml'); s=p.read_text()
+          if 'const ogType=' not in s:
+            marker="const canonical=`${site}articles/${a.slug}.html`, desc=a.dek||a.description||'', og=a.og?.image||a.cover||'';"
+            if marker not in s: raise SystemExit('static OG anchor not found')
+            extra=' const ext=String(og).split("?")[0].split(".").pop().toLowerCase(); const ogType=({jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp",gif:"image/gif"})[ext]||"";'
+            s=s.replace(marker,marker+extra,1)
+          s=s.replace('<meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">','${ogType?`<meta property="og:image:type" content="${ogType}">`:""}')
+          if '../assets/js/related-articles.js' not in s:
+            s=s.replace('<script src="../assets/js/main.js" defer></script></head>','<script src="../assets/js/main.js" defer></script><script src="../assets/js/related-articles.js" defer></script></head>')
+          p.write_text(s)
+
+          # AI request JSON is temporary and is removed even on failure.
           p=Path('.github/workflows/ai-writer.yml'); s=p.read_text()
           if 'Remove temporary request file' not in s:
             s=s.replace('      - name: Commit result','      - name: Remove temporary request file\n        if: always()\n        run: rm -f "admin/ai-requests/${{ github.event.inputs.request_id }}.json"\n\n      - name: Commit result',1)
           s=s.replace('      - name: Commit result\n        run:','      - name: Commit result\n        if: always()\n        run:',1)
           p.write_text(s)
 
+          # Remove obsolete self-patching workflows.
           for name in ['.github/workflows/audit-search-category.yml','.github/workflows/related-articles-static.yml']:
             Path(name).unlink(missing_ok=True)
           PY
-      - name: Convert existing local covers to JPEG
-        run: |
-          if command -v convert >/dev/null 2>&1; then
-            python3 - <<'PY'
-            from pathlib import Path
-            import json, subprocess, re
-            p=Path('articles.json'); data=json.loads(p.read_text()); changed=False
-            for a in data.get('articles',[]):
-              cover=str(a.get('cover',''))
-              if not cover or re.match(r'^https?://',cover,re.I) or not re.search(r'\.(webp|png|gif)$',cover,re.I): continue
-              src=Path(cover.lstrip('/'))
-              if not src.exists(): continue
-              dst=src.with_suffix('.jpg')
-              subprocess.run(['convert',str(src),'-background','white','-alpha','remove','-alpha','off','-resize','1200x630^','-gravity','center','-extent','1200x630','-quality','82',str(dst)],check=False)
-              if dst.exists():
-                old=a.get('cover'); a['cover']=str(dst)
-                if isinstance(a.get('og'),dict) and a['og'].get('image')==old: a['og']['image']=str(dst)
-                changed=True
-            if changed: p.write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n')
-            PY
-          fi
-      - name: Commit
+      - name: Commit P1 fixes
         run: |
           git config user.name "jaziel-repair[bot]"
           git config user.email "actions@users.noreply.github.com"
           git add -A
-          if git diff --cached --quiet; then echo "No P1 changes."; else git commit -m "Fix P1 media metadata and AI cleanup"; git push; fi
+          if git diff --cached --quiet; then echo "No P1 changes."; else git commit -m "Fix P1 metadata and workflow issues"; git push; fi
