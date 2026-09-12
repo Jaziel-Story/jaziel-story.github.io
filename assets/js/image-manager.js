@@ -23,7 +23,7 @@
   function validUrl(value) {
     try {
       const url = new URL(String(value || "").trim());
-      return url.protocol === "https:" || url.protocol === "http:";
+      return url.protocol === "https:";
     } catch {
       return false;
     }
@@ -59,11 +59,10 @@
       input.setCustomValidity("");
       return true;
     }
-    input.setCustomValidity("Use a valid http(s) image URL.");
+    input.setCustomValidity("Use a valid HTTPS image URL.");
     return false;
   }
 
-  // Capture phase works for dynamically-created body image rows too.
   document.addEventListener("change", event => {
     const input = event.target.closest('input[type="file"][accept*="image"]');
     if (input) validateFileInput(input);
@@ -74,16 +73,13 @@
     if (input) validateUrlInput(input);
   }, true);
 
-  // Final pre-publish guard: stop invalid image inputs before GitHub writes begin.
   document.addEventListener("click", event => {
     const button = event.target.closest("#btnPublish");
     if (!button) return;
-
     const fileInputs = [...document.querySelectorAll('input[type="file"][accept*="image"]')];
     const urlInputs = [...document.querySelectorAll('input[type="url"][id="inCoverUrl"], input[type="url"][data-image-url]')];
     const filesOk = fileInputs.every(validateFileInput);
     const urlsOk = urlInputs.every(validateUrlInput);
-
     if (!filesOk || !urlsOk) {
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -109,10 +105,7 @@
 
   function openDB() {
     return new Promise((resolve, reject) => {
-      if (!window.indexedDB) {
-        reject(new Error("IndexedDB is unavailable in this browser."));
-        return;
-      }
+      if (!window.indexedDB) { reject(new Error("IndexedDB is unavailable in this browser.")); return; }
       const request = indexedDB.open(DB_NAME, 1);
       request.onupgradeneeded = () => {
         const db = request.result;
@@ -163,39 +156,24 @@
         .sort((a, b) => String(b[1].savedAt || "").localeCompare(String(a[1].savedAt || "")));
       if (matches.length) return matches[0][0];
       return location.hash.includes("/new") ? "new" : (slug || "new");
-    } catch {
-      return "new";
-    }
+    } catch { return "new"; }
   }
 
-  function imageKey(draftKey, kind, index = "") {
-    return `${draftKey}::${kind}::${index}`;
-  }
+  function imageKey(draftKey, kind, index = "") { return `${draftKey}::${kind}::${index}`; }
 
   async function saveDraftImages(draftKey) {
     const coverInput = document.querySelector("#coverFile");
     const coverFile = coverInput?.files?.[0] || null;
     const coverKey = imageKey(draftKey, "cover");
-    if (coverFile) await putImage(coverKey, coverFile);
-    else await deleteImage(coverKey);
-
+    if (coverFile) await putImage(coverKey, coverFile); else await deleteImage(coverKey);
     const bodyInputs = [...document.querySelectorAll("#bodyImagesList [data-image-file]")];
     const activeKeys = new Set();
-
     for (const input of bodyInputs) {
       const index = input.dataset.imageFile;
       const file = input.files?.[0] || null;
       const key = imageKey(draftKey, "body", index);
-      if (file) {
-        activeKeys.add(key);
-        await putImage(key, file);
-      } else {
-        await deleteImage(key);
-      }
+      if (file) { activeKeys.add(key); await putImage(key, file); } else await deleteImage(key);
     }
-
-    // The editor may have fewer rows after a user removes an image.
-    // Delete any old body slots for the currently visible row range.
     for (let i = 0; i < bodyInputs.length; i++) {
       const key = imageKey(draftKey, "body", i);
       if (!activeKeys.has(key)) await deleteImage(key);
@@ -209,15 +187,12 @@
       dataTransfer.items.add(file);
       input.files = dataTransfer.files;
       input.dispatchEvent(new Event("change", { bubbles: true }));
-    } catch (error) {
-      console.error("[draft-image-persistence] Could not restore file input", error);
-    }
+    } catch (error) { console.error("[draft-image-persistence] Could not restore file input", error); }
   }
 
   async function restoreDraftImages(draftKey) {
     const coverFile = await getImage(imageKey(draftKey, "cover"));
     if (coverFile) assignFileToInput(document.querySelector("#coverFile"), coverFile);
-
     const bodyInputs = [...document.querySelectorAll("#bodyImagesList [data-image-file]")];
     for (const input of bodyInputs) {
       const file = await getImage(imageKey(draftKey, "body", input.dataset.imageFile));
@@ -235,51 +210,20 @@
     setTimeout(() => el.remove(), 5000);
   }
 
-  // The existing admin.js listener saves/loads the article text/state first.
-  // This delegated listener then persists/restores the binary image files.
   document.addEventListener("click", event => {
     const saveButton = event.target.closest("#btnSaveDraft");
-    if (saveButton) {
-      setTimeout(async () => {
-        try {
-          const key = currentDraftKey();
-          await saveDraftImages(key);
-          console.info("[draft-image-persistence] draft images saved", key);
-        } catch (error) {
-          console.error("[draft-image-persistence] save failed", error);
-          showError("Draft text was saved, but the draft images could not be saved.");
-        }
-      }, 0);
-    }
-
+    if (saveButton) setTimeout(async () => { try { await saveDraftImages(currentDraftKey()); } catch (error) { console.error("[draft-image-persistence] save failed", error); showError("Draft text was saved, but the draft images could not be saved."); } }, 0);
     const loadButton = event.target.closest("#btnLoadDraft");
-    if (loadButton) {
-      setTimeout(async () => {
-        try {
-          const key = currentDraftKey();
-          await restoreDraftImages(key);
-          console.info("[draft-image-persistence] draft images restored", key);
-        } catch (error) {
-          console.error("[draft-image-persistence] restore failed", error);
-          showError("Draft text was loaded, but the draft images could not be restored.");
-        }
-      }, 0);
-    }
-
+    if (loadButton) setTimeout(async () => { try { await restoreDraftImages(currentDraftKey()); } catch (error) { console.error("[draft-image-persistence] restore failed", error); showError("Draft text was loaded, but the draft images could not be restored."); } }, 0);
     const clearButton = event.target.closest("#btnClearDraft");
     if (clearButton) {
-      // Capture the draft key before admin.js removes the localStorage entry.
       const keyBeforeClear = currentDraftKey();
       setTimeout(async () => {
         try {
           await deleteImage(imageKey(keyBeforeClear, "cover"));
           const bodyInputs = [...document.querySelectorAll("#bodyImagesList [data-image-file]")];
-          for (let i = 0; i < bodyInputs.length; i++) {
-            await deleteImage(imageKey(keyBeforeClear, "body", i));
-          }
-        } catch (error) {
-          console.error("[draft-image-persistence] clear failed", error);
-        }
+          for (let i = 0; i < bodyInputs.length; i++) await deleteImage(imageKey(keyBeforeClear, "body", i));
+        } catch (error) { console.error("[draft-image-persistence] clear failed", error); }
       }, 0);
     }
   });
