@@ -44,6 +44,7 @@ a maximum of **2 sections per page**. The first page is the default when no
 - Numbered page links show **Page X of Y**.
 - Section images remain mapped sequentially: Section 1 → Image 1, Section 2 → Image 2, and so on.
 - Static generated article pages and the dynamic article view use the same pagination rule.
+- The article cover appears only on Page 1. Page 2 and later retain the article title but do not repeat the dek/read-time metadata.
 
 ## Admin Panel
 
@@ -105,6 +106,17 @@ update that single constant — no other file needs to change.
 commits first. Do not repeat a change that is already marked DONE unless a
 regression is confirmed.
 
+### 2026-09-13 — Article pagination display refinement
+
+- **Priority:** P2 / refine the visual continuation flow after live review without changing pagination behavior.
+- **Files changed:** `assets/js/article-pagination.js`.
+- **Change:** Kept the article title visible on every pagination page, while showing the dek and read-time/date metadata only on Page 1. The cover remains Page-1-only.
+- **Reason:** User approved the cleaner Page 2 presentation: title retained for context, repeated dek/metadata removed.
+- **Commits:** `d23190ddec29c1b1cfbd735a3a43ced8a177e137`, `41d9920695782654ac0b7e066544f770a2c8816a`, `67f423b6edb6ffb24e29b8daaab970945cb47e65`.
+- **Verification:** Source audit confirmed Page 2 contains only continuation sections/images/closing content; user visually confirmed the cover is no longer repeated on Page 2. Pagination controls were not changed.
+- **Deployment:** User live screenshot confirmed the Page-2 cover removal; the latest dek/metadata refinement needs live browser confirmation after deployment.
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
+
 ### 2026-09-13 — Article pagination implemented
 
 - **Priority:** P1 / improve long-article readability and continuation flow while keeping Article Schema v1 unchanged.
@@ -148,7 +160,7 @@ regression is confirmed.
 - **P1:** `assets/js/admin-section-labels.js` no longer uses a persistent `MutationObserver`. It uses bounded event-driven refreshes after editor navigation/add/remove actions, covering dynamic editor rendering without an observer feedback loop.
 - **P1:** `assets/js/admin-preview-order-fix.js` now targets `#btnPreview` and retries for a few animation frames so asynchronous Preview rendering is handled without a persistent observer or interval.
 - **P1/P2:** `assets/js/ai-writer-category-fix.js` no longer observes the whole document. Its temporary observer is scoped to the active AI status/view and disconnects after success or failure.
-- **P2:** `assets/js/image-manager.js` now accepts safe Jaziel repository image paths as well as HTTP(S) image URLs, while retaining the existing 10 MB/type guard.
+- **P2:** `assets/js/image-manager.js` now accepts safe Jaziel repository image paths as well as HTTP(S) URLs, while retaining the existing 10 MB/type guard.
 - **P2:** draft image persistence now clears stale body-image IndexedDB entries by draft-key prefix before saving the current selection.
 - **Cache protection:** audited Admin helper scripts are cache-busted in `admin/index.html`.
 - **Schema:** Article Schema v1 was not changed.
@@ -222,6 +234,7 @@ These are protected baseline fixes. If a future bug appears, **do not immediatel
 - AI Writer P1 workflow fix.
 - GitHub Pages deployment of the latest contact email change.
 - Article pagination across 1-, 2-, 3-, 4-, 5-, and 6-section articles.
+- Latest Page-2 display refinement: title retained; dek/read-time metadata hidden after Page 1.
 
 ### 🟠 AI Writer privacy / E2E review pending
 
