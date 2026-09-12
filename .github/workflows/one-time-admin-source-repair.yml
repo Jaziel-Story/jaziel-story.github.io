@@ -16,11 +16,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Restore known clean source and apply exact Claude patch
+      - name: Restore exact Claude baseline and apply exact one-character patch
         shell: bash
         run: |
           set -euo pipefail
-          git show 309d9b0c461bc8110a9876ca2e675c7c5e704959:admin/admin.js > admin/admin.js
+          git show 12a3e3b40fc6ced566bc1ab03c09259aafea68b1:admin/admin.js > admin/admin.js
           python - <<'PY'
           from pathlib import Path
           p = Path('admin/admin.js')
