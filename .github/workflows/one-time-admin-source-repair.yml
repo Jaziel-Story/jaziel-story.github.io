@@ -1,0 +1,42 @@
+name: One-time admin source repair
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor == 'Jaziel-Story'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore known clean source and apply exact Claude patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show 309d9b0c461bc8110a9876ca2e675c7c5e704959:admin/admin.js > admin/admin.js
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('admin/admin.js')
+          s = p.read_text()
+          old = 'delete state.pendingBodyImageFiles[i]));'
+          new = 'delete state.pendingBodyImageFiles[i]}));'
+          if s.count(old) != 1:
+              raise SystemExit(f'Expected exactly one target, found {s.count(old)}')
+          p.write_text(s.replace(old, new, 1))
+          PY
+          node --check admin/admin.js
+          git diff --stat
+          git diff -- admin/admin.js
+          git config user.name 'Jaziel-Story'
+          git config user.email 'michaelgilroyjitmau@gmail.com'
+          rm .github/workflows/one-time-admin-source-repair.yml
+          git add admin/admin.js .github/workflows/one-time-admin-source-repair.yml
+          git commit -m 'Fix admin panel syntax with exact Claude patch'
+          git push
