@@ -12,19 +12,19 @@
     style.id = "bodyImageMarkerStyles";
     style.textContent = `
       .body-image-marker {
-        display:inline-flex;
+        display:flex;
         align-items:center;
-        margin:-2px 0 10px;
-        padding:5px 10px;
-        border-radius:999px;
+        margin:0 0 8px;
+        padding:7px 10px;
+        border-radius:9px;
         background:var(--text);
         color:var(--surface);
-        font-size:.78rem;
+        font-size:.82rem;
         font-weight:700;
-        letter-spacing:.02em;
+        letter-spacing:.01em;
       }
       .body-image-flow-hint {
-        margin:-4px 0 12px;
+        margin:-2px 0 10px;
         color:var(--muted);
         font-size:.76rem;
       }
@@ -41,10 +41,9 @@
       if (!marker) {
         marker = document.createElement("div");
         marker.className = "body-image-marker";
-        marker.setAttribute("aria-hidden", "true");
         item.prepend(marker);
       }
-      marker.textContent = `Image ${index + 1}`;
+      marker.textContent = `Body Image ${index + 1}`;
 
       let hint = item.querySelector(":scope > .body-image-flow-hint");
       if (!hint) {
@@ -52,17 +51,26 @@
         hint.className = "body-image-flow-hint";
         item.insertBefore(hint, item.querySelector(".field") || null);
       }
-      hint.textContent = `Displayed after Section ${index + 1}`;
+      hint.textContent = `Displayed after Heading ${index + 1}`;
     });
   }
 
-  function init() {
-    addStyles();
+  function watchList(list) {
+    if (!list || list.dataset.bodyImageLabelsBound === "1") return;
+    list.dataset.bodyImageLabelsBound = "1";
     labelBodyImages();
+    new MutationObserver(labelBodyImages).observe(list, { childList: true, subtree: true });
+  }
+
+  function scan() {
+    addStyles();
     const list = document.querySelector("#bodyImagesList");
-    if (list) {
-      new MutationObserver(labelBodyImages).observe(list, { childList: true, subtree: true });
-    }
+    if (list) watchList(list);
+  }
+
+  function init() {
+    scan();
+    new MutationObserver(scan).observe(document.body, { childList: true, subtree: true });
   }
 
   if (document.readyState === "loading") {
