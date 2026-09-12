@@ -49,6 +49,14 @@ This file is the project memory for repository changes. Read it before making a 
 - **Important:** This supersedes the earlier recovery commit `65334865f9d484f3f4133267a5951743ac48630a`; do not restore the b4 source again.
 - **Verification:** Source inspection confirms the malformed `toast()` line is corrected. The repository's JS syntax workflow is the authoritative automated check; its push-run result was not exposed by the connected GitHub status wrapper during this repair.
 
+### Admin deployment cache bust — added after live screenshot still showed Loading
+- **Status:** APPLIED / NEEDS LIVE VERIFICATION
+- **File:** `admin/index.html`
+- **Problem:** The page was still requesting `admin.js?v=20260912-2`, the same cache-busting URL used before the final source repair. A browser/CDN could therefore continue serving the older broken JavaScript even though `main/admin.js` had been repaired.
+- **Change:** Updated the script URL to `admin.js?v=20260912-4` without changing Admin logic or Article Schema v1.
+- **Commit:** `2822ba6a33336f0dea59c206fb5a7e147f98f8c5`
+- **Verification:** Current repository `admin/index.html` now points to the new versioned URL. Live deployment still needs to be checked.
+
 ### Temporary repair workflow — created and removed
 - **Status:** REVERTED / CLEANED UP
 - **File:** `.github/workflows/repair-admin-parse.yml`
