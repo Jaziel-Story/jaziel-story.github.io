@@ -6,6 +6,32 @@
 (() => {
   "use strict";
 
+  function addStyles() {
+    if (document.getElementById("bodyImageMarkerStyles")) return;
+    const style = document.createElement("style");
+    style.id = "bodyImageMarkerStyles";
+    style.textContent = `
+      .body-image-marker {
+        display:inline-flex;
+        align-items:center;
+        margin:-2px 0 10px;
+        padding:5px 10px;
+        border-radius:999px;
+        background:var(--text);
+        color:var(--surface);
+        font-size:.78rem;
+        font-weight:700;
+        letter-spacing:.02em;
+      }
+      .body-image-flow-hint {
+        margin:-4px 0 12px;
+        color:var(--muted);
+        font-size:.76rem;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   function labelBodyImages() {
     const list = document.querySelector("#bodyImagesList");
     if (!list) return;
@@ -31,6 +57,7 @@
   }
 
   function init() {
+    addStyles();
     labelBodyImages();
     const list = document.querySelector("#bodyImagesList");
     if (list) {
