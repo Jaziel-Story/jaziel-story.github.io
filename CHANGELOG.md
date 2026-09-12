@@ -14,6 +14,16 @@ This file is the project memory for repository changes. Read it before making a 
 
 ## 2026-09-13
 
+### Article pagination display refinement
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P2 / refine Page 2 readability after live visual review without changing pagination behavior.
+- **Files:** `assets/js/article-pagination.js`.
+- **Change:** Kept the article title visible on every pagination page, while showing the dek and read-time/date metadata only on Page 1. The article cover remains Page-1-only.
+- **Reason:** User approved the cleaner continuation design: Page 2 should retain the title for context but avoid repeating the dek and metadata.
+- **Commits:** `d23190ddec29c1b1cfbd735a3a43ced8a177e137`, `41d9920695782654ac0b7e066544f770a2c8816a`, `67f423b6edb6ffb24e29b8daaab970945cb47e65`.
+- **Verification:** Repository audit confirmed Page 2 contains continuation sections/images/closing content and no cover; user visually confirmed the cover is gone from Page 2. Pagination controls were not changed.
+- **Deployment:** User live screenshot verified the Page-2 cover removal. Latest dek/metadata refinement still needs user live-browser confirmation after deployment.
+
 ### Article pagination implemented
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
 - **Priority:** P1 / improve long-article readability and continuation flow while keeping Article Schema v1 unchanged.
