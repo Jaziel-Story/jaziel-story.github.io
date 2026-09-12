@@ -17,7 +17,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Validate Article Schema v1
+        run: node .github/scripts/validate-articles.mjs
       - name: Generate static pages and patch admin CRUD cleanup
         run: |
           node <<'NODE'
@@ -31,12 +36,8 @@ jobs:
           const ad = () => '<div class="ad-slot article-ad-slot" aria-label="Advertisement"></div>';
           const data = JSON.parse(fs.readFileSync('articles.json','utf8'));
           fs.mkdirSync('articles',{recursive:true});
-
           const validSlugs = new Set((data.articles||[]).map(a => a && a.slug).filter(Boolean));
-          for (const name of fs.readdirSync('articles')) {
-            if (name.endsWith('.html') && !validSlugs.has(name.slice(0, -5))) fs.unlinkSync(`articles/${name}`);
-          }
-
+          for (const name of fs.readdirSync('articles')) if (name.endsWith('.html') && !validSlugs.has(name.slice(0, -5))) fs.unlinkSync(`articles/${name}`);
           for (const a of (data.articles||[])) {
             let body=a.intro?`<p>${esc(a.intro)}</p>`:''; let ii=0;
             const sections = a.sections || [];
@@ -57,36 +58,12 @@ jobs:
             const page=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="${esc(desc)}"><meta name="theme-color" content="#111111"><title>${esc((a.seo?.title)||`${a.title||'Story'} | Jaziel`)}</title><link rel="canonical" href="${esc(canonical)}"><meta property="og:type" content="article"><meta property="og:site_name" content="Jaziel"><meta property="og:title" content="${esc(a.og?.title||a.title||'')}"><meta property="og:description" content="${esc(a.og?.description||desc)}"><meta property="og:image" content="${esc(abs(og))}"><meta property="og:url" content="${esc(canonical)}"><meta property="og:image:alt" content="${esc(a.title||'')}">${ogTypeMeta}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(a.og?.title||a.title||'')}"><meta name="twitter:description" content="${esc(a.og?.description||desc)}"><meta name="twitter:image" content="${esc(abs(og))}"><link rel="stylesheet" href="../assets/css/style.css"><script src="../assets/js/main.js" defer></script><script src="../assets/js/related-articles.js" defer></script></head><body data-page="static-article"><header class="site-header"><div class="container header-inner"><a class="logo" href="../index.html">JAZIEL</a><div class="header-actions"><button class="icon-button" type="button" aria-label="Search">⌕</button></div></div></header><main><div class="container"><article class="article"><p class="back-link"><a href="../index.html">← Back to Jaziel</a></p>${a.category?`<a class="story-category" href="../category.html?category=${encodeURIComponent(a.category)}">${esc(a.category)}</a>`:''}<h1 class="article-title">${esc(a.title||'')}</h1>${a.dek?`<p class="article-dek">${esc(a.dek)}</p>`:''}<div class="story-meta">${esc([a.readTime,a.date].filter(Boolean).join(' · '))}</div>${a.cover?`<div class="article-cover"><img src="${esc(rel(a.cover))}" alt="${esc(a.title||'')}" loading="lazy" decoding="async"></div>`:''}${ad()}<div class="article-body">${body}${ad()}</div></article></div></main><footer class="site-footer"><div class="container footer-inner"><div><div class="footer-logo">JAZIEL</div><div>Trending stories, viral moments and news from around the world.</div></div><div class="footer-links"><a href="../about.html">About</a><a href="../contact.html">Contact</a><a href="../privacy.html">Privacy</a><a href="../terms.html">Terms</a></div><div>© 2026 Jaziel. All rights reserved.</div></div></footer></body></html>`;
             fs.writeFileSync(`articles/${a.slug}.html`,page);
           }
-
-          const linkFix = [
-            "(()=>{",
-            "const n=(r=document)=>r.querySelectorAll('a[href*=\"article.html?slug=\"]').forEach(l=>{",
-            "try{const u=new URL(l.getAttribute('href'),location.href),s=u.searchParams.get('slug');",
-            "if(s)l.setAttribute('href','articles/'+encodeURIComponent(s)+'.html');",
-            "}catch{}",
-            "});",
-            "new MutationObserver(()=>n()).observe(document.documentElement,{childList:true,subtree:true});",
-            "document.addEventListener('DOMContentLoaded',()=>n());",
-            "})()"
-          ].join('');
+          const linkFix = ["(()=>{","const n=(r=document)=>r.querySelectorAll('a[href*=\"article.html?slug=\"]').forEach(l=>{","try{const u=new URL(l.getAttribute('href'),location.href),s=u.searchParams.get('slug');","if(s)l.setAttribute('href','articles/'+encodeURIComponent(s)+'.html');","}catch{}","});","new MutationObserver(()=>n()).observe(document.documentElement,{childList:true,subtree:true});","document.addEventListener('DOMContentLoaded',()=>n());","})()"].join('');
           fs.writeFileSync('assets/js/link-fix.js',linkFix);
           for(const f of ['index.html','search.html','category.html','article.html']){let h=fs.readFileSync(f,'utf8');if(!h.includes('assets/js/link-fix.js'))h=h.replace('<script src="assets/js/main.js" defer></script>','<script src="assets/js/link-fix.js" defer></script>\n  <script src="assets/js/main.js" defer></script>');fs.writeFileSync(f,h)}
           let main=fs.readFileSync('assets/js/main.js','utf8'); main=main.replace(/return `article\\.html\\?slug=\\$\\{encodeURIComponent\\(article\\.slug\\)\\}`;/, 'return `articles/${encodeURIComponent(article.slug)}.html`;'); fs.writeFileSync('assets/js/main.js',main);
-
-          const adminPath = 'admin/admin.js';
-          let admin = fs.readFileSync(adminPath, 'utf8');
-          const marker = '// CRUD cleanup: remove replaced images after an edit';
-          if (!admin.includes(marker)) {
-            const before = '    const article = buildArticleFromEditor(true);';
-            const after = '    await saveArticlesArray(nextArticles, `Admin: ${state.editorMode === "new" ? "publish" : "update"} article "${article.title}"`);';
-            if (!admin.includes(before) || !admin.includes(after)) throw new Error('Could not locate Admin publish anchors for CRUD cleanup patch.');
-            admin = admin.replace(before, `    const previousArticle = state.editorMode === "edit"\n      ? state.articles.find(a => a.id === state.editorOriginalId)\n      : null;\n\n${before}`);
-            admin = admin.replace(after, `${after}\n\n    ${marker}\n    if (previousArticle) {\n      await removeOrphanedImages(previousArticle, nextArticles);\n    }`);
-            fs.writeFileSync(adminPath, admin);
-          }
-
-          execSync('git config user.name "github-actions[bot]"');
-          execSync('git config user.email "41898282+github-actions[bot]@users.noreply.github.com"');
-          execSync('git add articles assets/js/main.js assets/js/link-fix.js admin/admin.js index.html search.html category.html article.html');
+          const adminPath = 'admin/admin.js'; let admin = fs.readFileSync(adminPath, 'utf8'); const marker = '// CRUD cleanup: remove replaced images after an edit';
+          if (!admin.includes(marker)) { const before = '    const article = buildArticleFromEditor(true);'; const after = '    await saveArticlesArray(nextArticles, `Admin: ${state.editorMode === "new" ? "publish" : "update"} article "${article.title}"`);'; if (!admin.includes(before) || !admin.includes(after)) throw new Error('Could not locate Admin publish anchors for CRUD cleanup patch.'); admin = admin.replace(before, `    const previousArticle = state.editorMode === "edit"\n      ? state.articles.find(a => a.id === state.editorOriginalId)\n      : null;\n\n${before}`); admin = admin.replace(after, `${after}\n\n    ${marker}\n    if (previousArticle) {\n      await removeOrphanedImages(previousArticle, nextArticles);\n    }`); fs.writeFileSync(adminPath, admin); }
+          execSync('git config user.name "github-actions[bot]"'); execSync('git config user.email "41898282+github-actions[bot]@users.noreply.github.com"'); execSync('git add articles assets/js/main.js assets/js/link-fix.js admin/admin.js index.html search.html category.html article.html');
           try { execSync('git commit -m "Generate static Jaziel articles"'); execSync('git push'); } catch(e) { if(!String(e.stderr||'').includes('nothing to commit')) throw e; }
           NODE
