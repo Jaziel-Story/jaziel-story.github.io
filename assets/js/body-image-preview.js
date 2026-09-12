@@ -3,6 +3,17 @@
 (() => {
   "use strict";
 
+  function resolvePreviewSrc(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw) || /^blob:/i.test(raw) || /^data:/i.test(raw)) return raw;
+    try {
+      return new URL(raw.replace(/^\//, ""), `${location.origin}/`).href;
+    } catch {
+      return "";
+    }
+  }
+
   function apply() {
     const list = document.getElementById("bodyImagesList");
     if (!list) return;
@@ -28,13 +39,9 @@
           box.dataset.objectUrl = src;
           box.dataset.fileKey = key;
         }
-      } else if (urlInput && /^https?:\/\//i.test(urlInput.value.trim())) {
-        src = urlInput.value.trim();
-        const old = box.dataset.objectUrl || "";
-        if (old.startsWith("blob:")) URL.revokeObjectURL(old);
-        box.dataset.objectUrl = "";
-        box.dataset.fileKey = "";
       } else {
+        const raw = urlInput ? urlInput.value.trim() : "";
+        src = resolvePreviewSrc(raw);
         const old = box.dataset.objectUrl || "";
         if (old.startsWith("blob:")) URL.revokeObjectURL(old);
         box.dataset.objectUrl = "";
@@ -55,10 +62,6 @@
 
   function init() {
     apply();
-    // Admin's renderBodyImages() rebuilds this list after Add Image.
-    // Refresh after relevant UI events instead of observing the whole
-    // document. This avoids a MutationObserver feedback loop when apply()
-    // itself changes the preview DOM.
     document.addEventListener("click", e => {
       if (e.target.closest?.("#btnAddImage, [data-remove-image]")) scheduleApply();
     }, true);
