@@ -85,114 +85,69 @@ update that single constant — no other file needs to change.
 commits first. Do not repeat a change that is already marked DONE unless a
 regression is confirmed.
 
+### 2026-09-13 — Contact email updated
+
+- **Priority:** P2 / replace the public placeholder contact address with the real site-owner email supplied by the user.
+- **File changed:** `contact.html`.
+- **Change:** Replaced `hello@jaziel-story.example` with `michaelgilroyjitmau2@gmail.com` in both the visible email link and its `mailto:` target; removed the placeholder instruction.
+- **Reason:** The user confirmed the correct contact email.
+- **Commit:** `59069f9ccd8d97bde1dead9fa5859aa3e2d681a6`.
+- **Verification:** Source update committed successfully. No Article Schema or application JavaScript was changed.
+- **Deployment:** GitHub Pages deployment/live rendering still requires confirmation after the commit.
+- **Status:** DONE / NEEDS LIVE DEPLOYMENT VERIFICATION.
+
 ### 2026-09-13 — Admin P1–P2 audit hardening
 
-- **Priority:** P1–P2 / prevent known regressions, observer feedback loops,
-  stale browser code, and image/draft inconsistencies.
-- **P1:** `.github/workflows/generate-static-articles.yml` no longer creates or
-  injects the obsolete `link-fix.js`, preventing future article generation from
-  restoring the removed global observer.
-- **P1:** `assets/js/admin-section-labels.js` no longer uses a persistent
-  `MutationObserver`. It uses bounded event-driven refreshes after editor
-  navigation/add/remove actions, covering dynamic editor rendering without an
-  observer feedback loop.
-- **P1:** `assets/js/admin-preview-order-fix.js` now targets `#btnPreview` and
-  retries for a few animation frames so asynchronous Preview rendering is
-  handled without a persistent observer or interval.
-- **P1/P2:** `assets/js/ai-writer-category-fix.js` no longer observes the whole
-  document. Its temporary observer is scoped to the active AI status/view and
-  disconnects after success or failure.
-- **P2:** `assets/js/image-manager.js` now accepts safe Jaziel repository image
-  paths as well as HTTP(S) image URLs, while retaining the existing 10 MB/type
-  guard.
-- **P2:** draft image persistence now clears stale body-image IndexedDB entries
-  by draft-key prefix before saving the current selection.
-- **Cache protection:** audited Admin helper scripts are cache-busted in
-  `admin/index.html`.
+- **Priority:** P1–P2 / prevent known regressions, observer feedback loops, stale browser code, and image/draft inconsistencies.
+- **P1:** `.github/workflows/generate-static-articles.yml` no longer creates or injects the obsolete `link-fix.js`, preventing future article generation from restoring the removed global observer.
+- **P1:** `assets/js/admin-section-labels.js` no longer uses a persistent `MutationObserver`. It uses bounded event-driven refreshes after editor navigation/add/remove actions, covering dynamic editor rendering without an observer feedback loop.
+- **P1:** `assets/js/admin-preview-order-fix.js` now targets `#btnPreview` and retries for a few animation frames so asynchronous Preview rendering is handled without a persistent observer or interval.
+- **P1/P2:** `assets/js/ai-writer-category-fix.js` no longer observes the whole document. Its temporary observer is scoped to the active AI status/view and disconnects after success or failure.
+- **P2:** `assets/js/image-manager.js` now accepts safe Jaziel repository image paths as well as HTTP(S) image URLs, while retaining the existing 10 MB/type guard.
+- **P2:** draft image persistence now clears stale body-image IndexedDB entries by draft-key prefix before saving the current selection.
+- **Cache protection:** audited Admin helper scripts are cache-busted in `admin/index.html`.
 - **Schema:** Article Schema v1 was not changed.
-- **Files changed:** `.github/workflows/generate-static-articles.yml`,
-  `assets/js/admin-section-labels.js`, `assets/js/ai-writer-category-fix.js`,
-  `assets/js/image-manager.js`, `assets/js/admin-preview-order-fix.js`,
-  `admin/index.html`.
-- **Commits:** `09cb3be8d3373c69ff70d84bac692f690d473ab0`,
-  `4d111022dda3645763322d7970f47b07a785193e`,
-  `75b5322707d2b6633497b24a56695c6807faf93e`,
-  `e8d43ef9541105c131ade130b2027f4705d8b999`,
-  `b6da7f8bf41f125300549f2d983a12248db1449f`,
-  `b215a6488313b57637758587d40f242cf3a8b50a`,
-  `8b80a7dccc7c59c10a86c363dfdfa27d6f2e4d60`.
-- **Verification:** The JavaScript workflow successfully passed on earlier
-  hardening commits `e8d43ef...`, `b6da7f8...`, and `b215a648...`. The latest
-  section-label refinement was additionally checked with `node --check`.
-  Full fresh workflow and live Admin E2E verification remain pending.
+- **Files changed:** `.github/workflows/generate-static-articles.yml`, `assets/js/admin-section-labels.js`, `assets/js/ai-writer-category-fix.js`, `assets/js/image-manager.js`, `assets/js/admin-preview-order-fix.js`, `admin/index.html`.
+- **Commits:** `09cb3be8d3373c69ff70d84bac692f690d473ab0`, `4d111022dda3645763322d7970f47b07a785193e`, `75b5322707d2b6633497b24a56695c6807faf93e`, `e8d43ef9541105c131ade130b2027f4705d8b999`, `b6da7f8bf41f125300549f2d983a12248db1449f`, `b215a6488313b57637758587d40f242cf3a8b50a`, `8b80a7dccc7c59c10a86c363dfdfa27d6f2e4d60`.
+- **Verification:** The JavaScript workflow successfully passed on earlier hardening commits `e8d43ef...`, `b6da7f8...`, and `b215a648...`. The latest section-label refinement was additionally checked with `node --check`. Full fresh workflow and live Admin E2E verification remain pending.
 - **Deployment:** GitHub Pages/live verification pending.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
 ### Protected fixes register — do not revert without a confirmed regression
 
-These are protected baseline fixes. If a future bug appears, **do not
-immediately modify or remove these files because they look related**. First
-reproduce the bug, inspect the current version, check this README and
-`CHANGELOG.md`, and compare the relevant commit.
+These are protected baseline fixes. If a future bug appears, **do not immediately modify or remove these files because they look related**. First reproduce the bug, inspect the current version, check this README and `CHANGELOG.md`, and compare the relevant commit.
 
-- `index.html` + `home-featured-minimal.js` + `home-latest-final.js` — homepage
-  loader/observer consolidation. Do not restore deleted competing loaders.
-- `assets/js/admin-section-labels.js` — bounded event-driven labels; do not
-  restore a persistent DOM observer without a reproduced regression.
-- `assets/js/ai-writer-category-fix.js` — scoped active-generation watch; do not
-  restore a document-wide observer.
-- `assets/js/admin-preview-order-fix.js` — bounded animation-frame Preview
-  repair; do not replace it with a permanent observer/interval without proof.
-- `assets/js/image-manager.js` + `assets/js/body-image-preview.js` — image
-  validation/preview compatibility for repository paths and local files.
-- `.github/workflows/generate-static-articles.yml` — must not recreate
-  `assets/js/link-fix.js` or inject it into pages.
-- `articles.json` — single source of truth and Article Schema v1; do not change
-  its structure as a workaround for an Admin UI bug.
+- `index.html` + `home-featured-minimal.js` + `home-latest-final.js` — homepage loader/observer consolidation. Do not restore deleted competing loaders.
+- `assets/js/admin-section-labels.js` — bounded event-driven labels; do not restore a persistent DOM observer without a reproduced regression.
+- `assets/js/ai-writer-category-fix.js` — scoped active-generation watch; do not restore a document-wide observer.
+- `assets/js/admin-preview-order-fix.js` — bounded animation-frame Preview repair; do not replace it with a permanent observer/interval without proof.
+- `assets/js/image-manager.js` + `assets/js/body-image-preview.js` — image validation/preview compatibility for repository paths and local files.
+- `.github/workflows/generate-static-articles.yml` — must not recreate `assets/js/link-fix.js` or inject it into pages.
+- `articles.json` — single source of truth and Article Schema v1; do not change its structure as a workaround for an Admin UI bug.
 
-**Bug investigation rule:** For a new bug, first classify it as a regression
-in a protected fix or an independent defect. Use the smallest targeted fix.
-Record the affected protected commit, the new commit, verification, deployment
-result, and whether the old fix remains intact. Never "clean up" a protected
-fix merely because it is nearby code.
+**Bug investigation rule:** For a new bug, first classify it as a regression in a protected fix or an independent defect. Use the smallest targeted fix. Record the affected protected commit, the new commit, verification, deployment result, and whether the old fix remains intact. Never "clean up" a protected fix merely because it is nearby code.
 
 ### 2026-09-12 — Admin Preview image order fix
 
-- **Priority:** P1 / user screenshot confirmed Body Images were rendered after
-  Section 3 instead of in section order.
-- **Finding:** The live Preview showed both existing body figures at the end.
-  The missing Section 3 image is intentionally postponed. Required behavior:
-  Body Image 1 after Section 1, Body Image 2 after Section 2, and no image after
-  Section 3 until one is added.
-- **Fix:** Added `assets/js/admin-preview-order-fix.js` and loaded it with a
-  cache-busted script reference. Article data and Schema v1 were untouched.
-- **Commits:** `8e8c3af2288eac967a47452fd5ae6f5e96c017f0`,
-  `d134c30290e30a3fa285b54899812145f659c47a`.
-- **Later hardening:** `b215a6488313b57637758587d40f242cf3a8b50a` added bounded
-  animation-frame retries for asynchronous Preview rendering.
+- **Priority:** P1 / user screenshot confirmed Body Images were rendered after Section 3 instead of in section order.
+- **Finding:** The live Preview showed both existing body figures at the end. The missing Section 3 image is intentionally postponed. Required behavior: Body Image 1 after Section 1, Body Image 2 after Section 2, and no image after Section 3 until one is added.
+- **Fix:** Added `assets/js/admin-preview-order-fix.js` and loaded it with a cache-busted script reference. Article data and Schema v1 were untouched.
+- **Commits:** `8e8c3af2288eac967a47452fd5ae6f5e96c017f0`, `d134c30290e30a3fa285b54899812145f659c47a`.
+- **Later hardening:** `b215a6488313b57637758587d40f242cf3a8b50a` added bounded animation-frame retries for asynchronous Preview rendering.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
 ### 2026-09-12 — Admin Preview stability + Body Image relative-path fix
 
-- **Priority:** P1 / Preview refresh/stuck behavior and missing Body Image
-  previews for repository-relative paths.
-- **Fix:** Removed the persistent `admin-preview-section-mapping.js` observer
-  approach and kept `admin/admin.js` untouched. Updated
-  `body-image-preview.js` to resolve relative repository paths.
-- **Commits:** `3bc626b6f7521f1bf96512f5585dd28cc4b1836d`,
-  `9bac5ef22f98f850c97079df431ea0c63be4da90`,
-  `56e7a982294e438464c4f0a91a26a147fc228753`.
+- **Priority:** P1 / Preview refresh/stuck behavior and missing Body Image previews for repository-relative paths.
+- **Fix:** Removed the persistent `admin-preview-section-mapping.js` observer approach and kept `admin/admin.js` untouched. Updated `body-image-preview.js` to resolve relative repository paths.
+- **Commits:** `3bc626b6f7521f1bf96512f5585dd28cc4b1836d`, `9bac5ef22f98f850c97079df431ea0c63be4da90`, `56e7a982294e438464c4f0a91a26a147fc228753`.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
 ### 2026-09-12 — Homepage performance consolidation
 
 - **Priority:** P1 / user-reported homepage performance problem.
-- **Fix:** Homepage now uses one dedicated data/render path; obsolete loaders
-  and observers were removed.
-- **Commits:** `aa690bb0658960d0d3b0871e2e7452b73db3f10b`,
-  `184a89b922fb860079dcd80efadfd87bbc97122b`,
-  `f58ab89ccda1b0183ef636b76b4da46ed0de67cd`,
-  `83bb01c1d20d82de509a4467d2906675fe8a7580`.
+- **Fix:** Homepage now uses one dedicated data/render path; obsolete loaders and observers were removed.
+- **Commits:** `aa690bb0658960d0d3b0871e2e7452b73db3f10b`, `184a89b922fb860079dcd80efadfd87bbc97122b`, `f58ab89ccda1b0183ef636b76b4da46ed0de67cd`, `83bb01c1d20d82de509a4467d2906675fe8a7580`.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
 ### 2026-09-12 — Admin Panel recovery & audit
@@ -211,27 +166,19 @@ fix merely because it is nearby code.
 - Most Popular metadata fix is complete.
 - Related Stories static image-path fix is implemented.
 - Article Schema v1 is locked and unchanged.
+- Admin Preview has been checked by the user and confirmed safe.
+- Public Contact email is now set to the user-confirmed email address.
 
 ### 🟡 Needs live verification
 
-- Latest Admin Preview ordering/timing hardening.
-- Admin Preview stability and Body Image relative-path behavior.
+- Latest Admin P1–P2 hardening.
 - Homepage loader/observer cleanup.
 - AI Writer P1 workflow fix.
-- New Admin P1–P2 hardening from 2026-09-13.
-
-### 🔴 Needs user input
-
-- `contact.html` still contains the placeholder email
-  `hello@jaziel-story.example`. It must be replaced with the real contact
-  email; no email address will be invented by the audit.
+- GitHub Pages deployment of the latest contact email change.
 
 ### 🟠 AI Writer privacy / E2E review pending
 
-- AI request/result JSON remains repository-backed. In a public repository,
-  those contents can be publicly readable. This was not moved during this
-  hardening pass because changing the transport would be a separate
-  architecture decision and could break the working AI flow.
+- AI request/result JSON remains repository-backed. In a public repository, those contents can be publicly readable. This was not moved during this hardening pass because changing the transport would be a separate architecture decision and could break the working AI flow.
 - A fresh end-to-end AI Writer test is still required.
 
 ## Change-control rule
@@ -243,12 +190,9 @@ For every future repository change:
 3. Make the smallest safe change possible.
 4. Do not touch Article Schema v1 unless explicitly approved.
 5. Verify syntax/build/workflow status before declaring success.
-6. Record the exact files, reason, commit SHA, verification, and deployment
-   status in both this README and `CHANGELOG.md`.
-7. If a change is reverted or superseded, record that explicitly so it is never
-   accidentally repeated.
+6. Record the exact files, reason, commit SHA, verification, and deployment status in both this README and `CHANGELOG.md`.
+7. If a change is reverted or superseded, record that explicitly so it is never accidentally repeated.
 
 ## Monetization
 
-Adsterra ad slots (`.ad-slot` elements) are unchanged. The Admin Panel does not
-manage ad code.
+Adsterra ad slots (`.ad-slot` elements) are unchanged. The Admin Panel does not manage ad code.
