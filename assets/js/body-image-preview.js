@@ -22,22 +22,37 @@
     let src = "";
 
     if (fileInput && fileInput.files && fileInput.files[0]) {
-      src = URL.createObjectURL(fileInput.files[0]);
-      box.dataset.objectUrl = src;
+      const currentFile = fileInput.files[0];
+      const previousUrl = box.dataset.lastObjectUrl || "";
+      const previousName = box.dataset.lastFileName || "";
+      const previousSize = box.dataset.lastFileSize || "";
+
+      if (previousUrl && previousName === currentFile.name && previousSize === String(currentFile.size)) {
+        src = previousUrl;
+      } else {
+        if (previousUrl.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
+        src = URL.createObjectURL(currentFile);
+        box.dataset.lastObjectUrl = src;
+        box.dataset.lastFileName = currentFile.name;
+        box.dataset.lastFileSize = String(currentFile.size);
+      }
     } else if (urlInput && URL_RE.test(urlInput.value.trim())) {
       src = urlInput.value.trim();
-    }
-
-    const oldObjectUrl = box.dataset.lastObjectUrl;
-    if (oldObjectUrl && oldObjectUrl !== src && oldObjectUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(oldObjectUrl);
+      const previousUrl = box.dataset.lastObjectUrl || "";
+      if (previousUrl.startsWith("blob:") && previousUrl !== src) URL.revokeObjectURL(previousUrl);
+      box.dataset.lastObjectUrl = "";
+      box.dataset.lastFileName = "";
+      box.dataset.lastFileSize = "";
     }
 
     if (src) {
-      box.dataset.lastObjectUrl = src;
-      box.innerHTML = `<img src="${src.replace(/"/g, "&quot;")}" alt="Preview of Image ${index + 1}"><span>Image ${index + 1} preview</span>`;
+      box.innerHTML = `<img src="${src.replace(/"/g, "&quot;")}" alt="Preview of Body Image ${index + 1}"><span>Body Image ${index + 1} preview</span>`;
     } else {
+      const previousUrl = box.dataset.lastObjectUrl || "";
+      if (previousUrl.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
       box.dataset.lastObjectUrl = "";
+      box.dataset.lastFileName = "";
+      box.dataset.lastFileSize = "";
       box.innerHTML = `<div class="body-image-preview-empty">No image selected</div>`;
     }
   }
@@ -48,23 +63,27 @@
     [...list.querySelectorAll(":scope > .repeat-item")].forEach((item, index) => ensurePreview(item, index));
   }
 
-  function bindInputs() {
-    const list = document.querySelector("#bodyImagesList");
-    if (!list || list.dataset.previewBound === "1") return;
-    list.dataset.previewBound = "1";
+  function watchList(list) {
+    if (!list || list.dataset.bodyImagePreviewBound === "1") return;
+    list.dataset.bodyImagePreviewBound = "1";
+    refresh();
     list.addEventListener("change", event => {
       if (event.target.matches("[data-image-file]")) refresh();
     });
     list.addEventListener("input", event => {
       if (event.target.matches("[data-image-url]")) refresh();
     });
+    new MutationObserver(refresh).observe(list, { childList: true, subtree: true });
+  }
+
+  function scan() {
+    const list = document.querySelector("#bodyImagesList");
+    if (list) watchList(list);
   }
 
   function init() {
-    refresh();
-    bindInputs();
-    const list = document.querySelector("#bodyImagesList");
-    if (list) new MutationObserver(() => { refresh(); bindInputs(); }).observe(list, { childList: true, subtree: true });
+    scan();
+    new MutationObserver(scan).observe(document.body, { childList: true, subtree: true });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
