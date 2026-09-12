@@ -14,6 +14,29 @@ This file is the project memory for repository changes. Read it before making a 
 
 ## 2026-09-13
 
+### Article pagination implemented
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P1 / improve long-article readability and continuation flow while keeping Article Schema v1 unchanged.
+- **Files:** `assets/js/article-pagination.js`, `assets/css/article-pagination.css`, `article.html`, `.github/workflows/generate-static-articles.yml`.
+- **Change:** Added a UI-only pagination layer with a maximum of 2 sections per page, default Page 1 behavior, numbered page links, Page X of Y status, Continue Reading CTA, and sequential section/image mapping. Static generation now emits page containers and pagination controls without creating extra HTML files.
+- **URL behavior:** Static pages use `articles/{slug}.html?page=N`; missing `page` means Page 1. Dynamic fallback uses `article.html?slug={slug}&page=N`.
+- **Schema:** Article Schema v1 and `articles.json` structure were not changed.
+- **Cleanup:** Removed the stale `assets/js/link-fix.js` script reference from `article.html`; the deleted obsolete helper was not restored.
+- **Reason:** User approved pagination design A+B+C and the recommendation that an absent `page` parameter defaults to Page 1.
+- **Commits:** `b6c2362564b9f405618b5411219d9f2c791d1251`, `ba70730c3ed0cdea69751206f15b96d1d48feca1`, `6eacf514d273c20c6785d9fed2f0b446126663ce`, `35962fc55d94eaad8bb999511648bc355a1accf8`, `bf8d4609cf17b22b695d493e4e4b86d55e6bdfba`.
+- **Verification:** `node --check` passed for `article-pagination.js` and the extracted static generator script. A local fixture test confirmed 5 sections produce 3 page containers, Continue Reading controls, Page 1 of 3, and images 1–5 in order. Fresh GitHub Actions and live Pages verification remain pending.
+- **Deployment:** Pending GitHub Actions regeneration and live browser verification.
+
+### Website OG cover metadata
+- **Status:** DONE / USER VERIFIED
+- **Priority:** P2 / add the website Open Graph/social sharing cover.
+- **Files:** `assets/images/og/jaziel-og-cover.png`, `index.html`.
+- **Change:** Added the Jaziel OG cover and website-level Open Graph/Twitter metadata pointing to the cover.
+- **Reason:** User requested a website OG cover.
+- **Commits:** `99f919e87a390aeeb266942a9472f0102f9cc4c1` for the image file/rename and `afcfa4ad5f7301fc319c6f0c722792268393cbb2` for metadata.
+- **Verification:** User confirmed the OG image appears successfully; repository source metadata was also checked.
+- **Deployment:** User-confirmed image visibility; broader social-platform cache verification is not claimed.
+
 ### Contact email updated
 - **Status:** DONE / NEEDS LIVE DEPLOYMENT VERIFICATION
 - **Priority:** P2 / replace the public placeholder contact address with the real site-owner email supplied by the user.
@@ -147,6 +170,12 @@ Every repository change must be recorded in this file and summarized in `README.
 - **Value:** `michaelgilroyjitmau2@gmail.com`
 - **Status:** UPDATED / NEEDS LIVE DEPLOYMENT VERIFICATION
 - **Reason:** User supplied and confirmed the real contact email.
+
+### 🟡 Article pagination
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Rule:** Maximum 2 sections per page; 1–2 sections stay on one page; longer articles use `?page=N` with numbered navigation and Continue Reading.
+- **Reason:** Improve long-story readability without changing Article Schema v1.
+- **Pending:** Live verification of 1–2, 3–4, 5–6, and longer section counts, including section/image order and mobile layout.
 
 ### 🟡 AI request/result JSON privacy
 - **Status:** ARCHITECTURE REVIEW REQUIRED / NOT CHANGED
