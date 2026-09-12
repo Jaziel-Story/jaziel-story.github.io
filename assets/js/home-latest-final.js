@@ -2,7 +2,7 @@
 (() => {
   "use strict";
 
-  const DATA_URL = `${window.location.origin}/articles.json?homepageFinal=${Date.now()}`;
+  const DATA_URL = new URL("articles.json", document.baseURI).href + `?homepageFinal=${Date.now()}`;
 
   function esc(value) {
     return String(value ?? "")
@@ -48,7 +48,11 @@
       if (title) title.textContent = latest.title || "";
       if (description) description.textContent = latest.description || latest.dek || "";
       if (meta) meta.textContent = [latest.readTime, latest.date].filter(Boolean).join(" · ");
-      if (image && latest.cover) image.style.backgroundImage = `url('${String(latest.cover).replace(/'/g, "\\'")}')`;
+      if (image && latest.cover) {
+        image.style.backgroundImage = `url('${String(latest.cover).replace(/'/g, "\\'")}')`;
+        image.style.backgroundSize = "cover";
+        image.style.backgroundPosition = "center";
+      }
     }
 
     if (list) {
@@ -72,11 +76,19 @@
     }
   }
 
-  fetch(DATA_URL, { cache: "no-store" })
-    .then(response => {
-      if (!response.ok) throw new Error(`articles.json HTTP ${response.status}`);
-      return response.json();
-    })
-    .then(data => render(Array.isArray(data.articles) ? data.articles : []))
-    .catch(error => console.error("Jaziel final homepage loader:", error));
+  function init() {
+    fetch(DATA_URL, { cache: "no-store" })
+      .then(response => {
+        if (!response.ok) throw new Error(`articles.json HTTP ${response.status}`);
+        return response.json();
+      })
+      .then(data => render(Array.isArray(data.articles) ? data.articles : []))
+      .catch(error => console.warn("Jaziel final homepage loader:", error));
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init, { once: true });
+  } else {
+    init();
+  }
 })();
