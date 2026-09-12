@@ -44,7 +44,6 @@ jobs:
               if(s.heading)body+=`<h2>${esc(s.heading)}</h2>`;
               body+=(s.paragraphs||[]).map(p=>`<p>${esc(p)}</p>`).join('');
               if(a.images?.[ii])body+=img(a.images[ii++]);
-              // Article ad slot after every second section.
               if ((si + 1) % 2 === 0 && si < sections.length - 1) body += ad();
             }
             while(ii<(a.images||[]).length)body+=img(a.images[ii++]);
@@ -70,8 +69,6 @@ jobs:
           for(const f of ['index.html','search.html','category.html','article.html']){let h=fs.readFileSync(f,'utf8');if(!h.includes('assets/js/link-fix.js'))h=h.replace('<script src="assets/js/main.js" defer></script>','<script src="assets/js/link-fix.js" defer></script>\n  <script src="assets/js/main.js" defer></script>');fs.writeFileSync(f,h)}
           let main=fs.readFileSync('assets/js/main.js','utf8'); main=main.replace(/return `article\\.html\\?slug=\\$\\{encodeURIComponent\\(article\\.slug\\)\\}`;/, 'return `articles/${encodeURIComponent(article.slug)}.html`;'); fs.writeFileSync('assets/js/main.js',main);
 
-          // Admin CRUD fix: when an existing article is edited, delete old
-          // cover/body uploads that are no longer referenced after the edit.
           const adminPath = 'admin/admin.js';
           let admin = fs.readFileSync(adminPath, 'utf8');
           const marker = '// CRUD cleanup: remove replaced images after an edit';
@@ -86,7 +83,7 @@ jobs:
             fs.writeFileSync(adminPath, admin);
           }
 
-          execSync('git config user.name "github-actions[bot]"'); execSync('git config user.email "41898282+users.noreply.github.com"');
+          execSync('git config user.name "github-actions[bot]"'); execSync('git config user.email "41898282+github-actions[bot]@users.noreply.github.com"');
           execSync('git add articles assets/js/main.js assets/js/link-fix.js admin/admin.js index.html search.html category.html article.html');
           try { execSync('git commit -m "Add article ad slots"'); execSync('git push'); } catch(e) { if(!String(e.stderr||'').includes('nothing to commit')) throw e; }
           NODE
