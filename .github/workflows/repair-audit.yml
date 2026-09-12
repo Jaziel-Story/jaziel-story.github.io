@@ -3,7 +3,6 @@ name: Jaziel prioritized audit repair
 on:
   push:
     paths:
-      - ".github/scripts/repair-audit.mjs"
       - ".github/workflows/repair-audit.yml"
   workflow_dispatch:
 
@@ -14,22 +13,48 @@ jobs:
   repair:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Apply prioritized fixes
-        run: node .github/scripts/repair-audit.mjs
-      - name: Commit fixes
+      - uses: actions/checkout@v4
+      - name: Apply P0 fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('admin/index.html')
+          s = p.read_text()
+          s = re.sub(r'\n?<script src="\.\./assets/js/admin-token-remember\.js" defer></script>', '', s)
+          p.write_text(s)
+          Path('assets/js/admin-token-remember.js').unlink(missing_ok=True)
+
+          p = Path('admin/admin.js')
+          s = p.read_text()
+          pattern = r'async function saveArticlesArray\(newArray, commitMessage\) \{.*?\n\}\n\nfunction nextArticleId'
+          replacement = '''async function saveArticlesArray(newArray, commitMessage) {
+            if (!state.articlesLoaded || !state.articlesSha) throw new Error("Articles are not loaded. Reload the admin panel before publishing.");
+            const baselineSha = state.articlesSha;
+            const latest = await ghGetFile(ARTICLES_PATH);
+            if (!latest) throw new Error("articles.json could not be found — refusing to publish.");
+            if (latest.sha !== baselineSha) throw new Error("Publish conflict: articles.json changed elsewhere after this editor loaded it. Reload the Articles list, reopen the article, and publish again so no newer changes are overwritten.");
+            const payload = { articles: newArray };
+            const contentStr = JSON.stringify(payload, null, 2) + "\\n";
+            const result = await ghPutFile(ARTICLES_PATH, utf8ToB64(contentStr), commitMessage, latest.sha);
+            state.articles = newArray;
+            state.articlesSha = result.content ? result.content.sha : null;
+            state.categories = uniqueCategories(newArray);
+            return result;
+          }
+
+          function nextArticleId'''
+          ns, n = re.subn(pattern, replacement, s, count=1, flags=re.S)
+          if n != 1: raise SystemExit('saveArticlesArray anchor not found')
+          p.write_text(ns)
+
+          d = Path('admin/ai-requests')
+          if d.exists():
+            for f in d.glob('*.json'): f.unlink()
+          PY
+      - name: Commit P0 fixes
         run: |
           git config user.name "jaziel-repair[bot]"
           git config user.email "actions@users.noreply.github.com"
           git add -A
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-          else
-            git commit -m "Fix prioritized Jaziel audit issues"
-            git push
-          fi
+          if git diff --cached --quiet; then echo "No P0 changes."; else git commit -m "Fix P0 admin security and publish conflicts"; git push; fi
