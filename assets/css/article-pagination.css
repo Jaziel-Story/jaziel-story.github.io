@@ -1,0 +1,76 @@
+/* =========================================================
+   JAZIEL — Article pagination UI
+   ========================================================= */
+
+.article-page-content[hidden] {
+  display: none;
+}
+
+.article-continue {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 28px 0 18px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+  text-align: center;
+}
+
+.article-continue span {
+  font-size: 1.1rem;
+}
+
+.article-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 12px 0 30px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+
+.article-page-status {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.article-page-numbers {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.article-page-number {
+  min-width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: .84rem;
+  font-weight: 800;
+}
+
+.article-page-number.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+@media (max-width: 520px) {
+  .article-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
