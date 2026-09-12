@@ -54,12 +54,12 @@
       const latest = sortNewestFirst(articles)[0];
       if (!latest) return;
 
-      // Main.js may render the old featured flag after this script starts.
-      // Re-apply the newest article whenever the featured card changes.
+      // Main.js may render its own featured choice. Re-apply the newest article
+      // whenever Main.js changes the featured card content.
       const card = document.querySelector(".featured-card");
       if (card) {
         const observer = new MutationObserver(() => applyLatest(latest));
-        observer.observe(card, { childList: true, subtree: true, characterData: true, attributes: true });
+        observer.observe(card, { childList: true, subtree: true, characterData: true });
       }
       applyLatest(latest);
     } catch (error) {
