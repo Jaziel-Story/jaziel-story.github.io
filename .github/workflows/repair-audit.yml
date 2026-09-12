@@ -16,7 +16,7 @@ jobs:
           from pathlib import Path
           import re
 
-          # HTTPS-only external image URLs.
+          # HTTPS-only image URLs.
           p=Path('admin/admin.js'); s=p.read_text()
           s,n=re.subn(r'function isValidImageUrl\(value\) \{.*?\n\}', 'function isValidImageUrl(value) {\n  try { return new URL(String(value || "").trim()).protocol === "https:"; }\n  catch { return false; }\n}', s, count=1, flags=re.S)
           if n!=1: raise SystemExit('admin URL validator not found')
@@ -27,7 +27,7 @@ jobs:
           if n!=1: raise SystemExit('image-manager URL validator not found')
           p.write_text(s)
 
-          # Static generator: OG image type follows the actual file extension; remove false dimensions.
+          # Truthful OG image type; omit unsupported hardcoded dimensions.
           p=Path('.github/workflows/generate-static-articles.yml'); s=p.read_text()
           if 'const ogType=' not in s:
             marker="const canonical=`${site}articles/${a.slug}.html`, desc=a.dek||a.description||'', og=a.og?.image||a.cover||'';"
@@ -39,20 +39,16 @@ jobs:
             s=s.replace('<script src="../assets/js/main.js" defer></script></head>','<script src="../assets/js/main.js" defer></script><script src="../assets/js/related-articles.js" defer></script></head>')
           p.write_text(s)
 
-          # AI request JSON is temporary and is removed even on failure.
+          # Delete request file after every AI run so raw input is not left public.
           p=Path('.github/workflows/ai-writer.yml'); s=p.read_text()
           if 'Remove temporary request file' not in s:
             s=s.replace('      - name: Commit result','      - name: Remove temporary request file\n        if: always()\n        run: rm -f "admin/ai-requests/${{ github.event.inputs.request_id }}.json"\n\n      - name: Commit result',1)
           s=s.replace('      - name: Commit result\n        run:','      - name: Commit result\n        if: always()\n        run:',1)
           p.write_text(s)
-
-          # Remove obsolete self-patching workflows.
-          for name in ['.github/workflows/audit-search-category.yml','.github/workflows/related-articles-static.yml']:
-            Path(name).unlink(missing_ok=True)
           PY
       - name: Commit P1 fixes
         run: |
           git config user.name "jaziel-repair[bot]"
           git config user.email "actions@users.noreply.github.com"
           git add -A
-          if git diff --cached --quiet; then echo "No P1 changes."; else git commit -m "Fix P1 metadata and workflow issues"; git push; fi
+          if git diff --cached --quiet; then echo "No P1 changes."; else git commit -m "Fix P1 metadata and AI cleanup"; git push; fi
