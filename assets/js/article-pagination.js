@@ -98,8 +98,8 @@
         <p class="back-link"><a href="index.html">← Back to Jaziel</a></p>
         ${article.category ? `<a class="story-category" href="${escapeAttribute(categoryUrl(article.category))}">${escapeHTML(article.category)}</a>` : ""}
         <h1 class="article-title">${escapeHTML(article.title || "")}</h1>
-        ${dek ? `<p class="article-dek">${escapeHTML(dek)}</p>` : ""}
-        <div class="story-meta">${escapeHTML(meta)}</div>
+        ${isFirst && dek ? `<p class="article-dek">${escapeHTML(dek)}</p>` : ""}
+        ${isFirst && meta ? `<div class="story-meta">${escapeHTML(meta)}</div>` : ""}
         <div class="article-body">${body}</div>
         ${paginationHTML(current, total, hrefForPage)}
         ${tagsHTML}
@@ -130,6 +130,12 @@
     continueLinks.forEach(link => {
       link.href = `?page=${Math.min(current + 1, total)}`;
     });
+
+    const dek = article?.querySelector(".article-dek");
+    const meta = article?.querySelector(".story-meta");
+    const showIntro = current === 1;
+    if (dek) dek.hidden = !showIntro;
+    if (meta) meta.hidden = !showIntro;
 
     const canonical = `${window.location.origin}/articles/${encodeURIComponent(slug)}.html`;
     const canonicalURL = current === 1 ? canonical : `${canonical}?page=${current}`;
