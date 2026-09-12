@@ -38,14 +38,21 @@
     return true;
   }
 
+  function scheduleApply() {
+    setTimeout(apply, 0);
+  }
+
   function init() {
     styles();
     apply();
-    document.addEventListener("click", () => setTimeout(apply, 0), true);
-    document.addEventListener("change", () => setTimeout(apply, 0), true);
-    const observer = new MutationObserver(() => apply());
-    observer.observe(document.body, { childList: true, subtree: true });
-    setInterval(apply, 500);
+    // renderBodyImages() rebuilds the list after Add Image/remove. Refresh
+    // after relevant UI events instead of observing the entire document.
+    document.addEventListener("click", e => {
+      if (e.target.closest?.("#btnAddImage, [data-remove-image]")) scheduleApply();
+    }, true);
+    document.addEventListener("change", e => {
+      if (e.target.matches?.("[data-image-file]")) scheduleApply();
+    }, true);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once:true });
