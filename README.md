@@ -9,11 +9,11 @@ Live site: https://jaziel-story.github.io/
 
 ```
 index.html         Homepage
-article.html        Single article view (?slug=…)
-search.html         Search
-category.html       Category browsing
+article.html       Single article view (?slug=…)
+search.html        Search
+category.html      Category browsing
 about.html, contact.html, privacy.html, terms.html
-articles.json       All article data (root of the repo — do not move)
+articles.json      All article data (root of the repo — do not move)
 assets/css/style.css  Shared stylesheet
 assets/js/main.js     Shared frontend logic (reads articles.json)
 assets/js/home-featured-minimal.js  Lightweight homepage presentation helper
@@ -94,6 +94,32 @@ later, update that single constant — no other file needs to change.
 Git commits first. Do not repeat a change that is already marked DONE unless
 a regression is confirmed.
 
+### 2026-09-12 — Admin Preview section/image mapping
+
+- **Priority:** P1 / user-reported Admin Preview ordering problem.
+- **Symptom:** Body images in Admin Preview were rendered after all section
+  text instead of immediately following their corresponding section.
+- **Root cause:** The current preview renderer generated all section content
+  first and then appended the complete `images` array as one block. The
+  Article Schema v1 data remains parallel by index; no schema field was
+  added or changed.
+- **Fix:** Added the targeted helper
+  `assets/js/admin-preview-section-mapping.js`. It moves preview body image
+  1 after Section 1, image 2 after Section 2, image 3 after Section 3, etc.
+  Missing images remain missing rather than being invented or duplicated.
+- **Files changed:** `admin/index.html`.
+- **File added:** `assets/js/admin-preview-section-mapping.js`.
+- **Commits:**
+  - `1dffe6892795eae230f4cb390a3e5d584d1d379f` — add mapping helper
+  - `89428821e921f3ddea6d8c90e70843f38b5dbc25` — load mapping helper in Admin
+- **Verification:** New helper passes `node --check`. Source logic was
+  reviewed to preserve Schema v1 and keep the change isolated from the core
+  `admin/admin.js` renderer.
+- **Deployment:** GitHub Pages deployment/cache refresh and user live Preview
+  testing are still required.
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
+- **Article Schema v1:** unchanged and remains locked.
+
 ### 2026-09-12 — Homepage performance consolidation
 
 - **Priority:** P1 / user-reported homepage performance problem.
@@ -146,7 +172,7 @@ a regression is confirmed.
   Dashboard, Articles, New Article, Search, Settings, Help, article count,
   category count, latest article, and Recent Articles.
 - Removed the completed one-time repair workflow in commit
-  `93c8332bd088464677d7f10eb9bf12a54c1ae3b6 so emergency repair code does
+  `93c8332bd088464677d7f10eb9bf12a54c1ae3b6` so emergency repair code does
   not remain in the normal architecture.
 - **Article Schema v1:** unchanged and remains locked.
 
