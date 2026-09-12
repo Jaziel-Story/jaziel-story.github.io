@@ -73,11 +73,50 @@ later, update that single constant — no other file needs to change.
 - `.github/workflows/validate-articles.yml` — runs automatically on every
   change to `articles.json` and fails the check if the schema is broken
   (missing required fields, duplicate slugs/ids, invalid dates, etc.).
+- `.github/workflows/validate-javascript.yml` — checks JavaScript syntax
+  with Node.js on JavaScript changes, helping catch parser errors before
+  deployment.
 - `.github/workflows/ai-writer.yml` — runs on demand, triggered by the
   Admin Panel, to turn raw text into a structured article draft with
   Gemini.
 
+## Repository Change Log
+
+**Important rule:** Every repository change must be recorded here and in
+`CHANGELOG.md`. Before making another fix, check these logs and the recent
+Git commits first. Do not repeat a change that is already marked DONE unless
+a regression is confirmed.
+
+### 2026-09-12 — Admin Panel recovery
+
+- Fixed the Admin Panel JavaScript parser error identified from the Claude
+  repair bundle: the `[data-image-url]` input listener inside
+  `renderBodyImages()` was missing a closing `}`.
+- Restored the Admin Panel to a clean source before applying the targeted
+  syntax repair, instead of performing another broad rewrite.
+- Removed the obsolete runtime loader and temporary repair workflow after
+  recovery.
+- Added permanent JavaScript syntax validation through
+  `.github/workflows/validate-javascript.yml`.
+- Added/maintained `CHANGELOG.md` as the detailed history for repository
+  changes.
+- **Live verification:** Admin Dashboard is now loading successfully and
+  displays the existing article, category, and dashboard statistics.
+- **Article Schema v1:** unchanged and remains locked.
+
+### 2026-09-12 — Related Stories
+
+- Fixed relative image paths for Related Stories on generated static article
+  pages. This is retained as a targeted fix and should not be reimplemented
+  unless a regression is observed.
+
+### 2026-09-12 — Most Popular
+
+- Fixed Most Popular metadata visibility/contrast on the homepage.
+- This fix is already complete; do not repeat it unless a new regression is
+  confirmed.
+
 ## Monetization
 
 Adsterra ad slots (`.ad-slot` elements) are unchanged. The Admin Panel does
-not manage ad code.
+ot manage ad code.
