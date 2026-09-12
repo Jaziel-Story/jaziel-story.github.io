@@ -1,0 +1,5 @@
+/* JAZIEL ADMIN — Modal visibility fix
+   Native [hidden] must always win over the modal flex layout. */
+.modal-overlay[hidden] {
+  display: none !important;
+}
