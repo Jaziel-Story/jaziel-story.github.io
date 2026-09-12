@@ -1,0 +1,10 @@
+/* =========================================================
+   JAZIEL — Popular List Fix
+   Keep Most Popular metadata readable on the light homepage.
+   ========================================================= */
+
+.popular-item .story-meta {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: .72rem;
+}
