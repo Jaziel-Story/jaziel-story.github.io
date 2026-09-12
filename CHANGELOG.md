@@ -14,6 +14,21 @@ This file is the project memory for repository changes. Read it before making a 
 
 ## 2026-09-12
 
+### Admin Preview section/image mapping
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P1 / user-reported Admin Preview ordering problem.
+- **Symptom:** Body images in Admin Preview were rendered after all section text instead of immediately following their corresponding section.
+- **Root cause:** The current preview renderer generated all section content first and then appended the complete `images` array as one block. The Article Schema v1 data remains parallel by index; no schema field was added or changed.
+- **Fix:** Added `assets/js/admin-preview-section-mapping.js`. It moves preview body image 1 after Section 1, image 2 after Section 2, image 3 after Section 3, etc. Missing images remain missing rather than being invented or duplicated.
+- **Files changed:** `admin/index.html`.
+- **File added:** `assets/js/admin-preview-section-mapping.js`.
+- **Commits:**
+  - `1dffe6892795eae230f4cb390a3e5d584d1d379f` — add mapping helper
+  - `89428821e921f3ddea6d8c90e70843f38b5dbc25` — load mapping helper in Admin
+- **Verification:** `node --check` passed for the new helper. Source logic was reviewed to preserve Schema v1 and keep the change isolated from `admin/admin.js`.
+- **Deployment:** GitHub Pages deployment/cache refresh and user live Preview testing are still required.
+- **Article Schema v1:** unchanged and remains locked.
+
 ### Homepage performance consolidation — duplicate loaders and observers removed
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
 - **Priority:** P1 / user-reported homepage performance problem.
