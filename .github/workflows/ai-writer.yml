@@ -1,15 +1,10 @@
 name: Jaziel AI Writer
 
-# Triggered by the Admin Panel (admin/admin.js) via the GitHub REST API's
-# workflow_dispatch endpoint. It never receives the Gemini API key from the
-# browser — GEMINI_API_KEY lives only as a GitHub Actions secret, used here
-# on GitHub's servers.
-
 on:
   workflow_dispatch:
     inputs:
       request_id:
-        description: "ID of the request file in admin/ai-requests/ to process"
+        description: "Temporary request ID to process"
         required: true
         type: string
 
@@ -26,20 +21,20 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-
       - name: Generate article with Gemini
-        id: generate
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           REQUEST_ID: ${{ github.event.inputs.request_id }}
         run: node .github/scripts/generate-article.mjs
-
-      - name: Commit result
+      - name: Remove temporary request file
+        if: always()
+        run: rm -f "admin/ai-requests/${{ github.event.inputs.request_id }}.json"
+      - name: Commit result and cleanup
+        if: always()
         run: |
           git config user.name "jaziel-ai-writer[bot]"
           git config user.email "actions@users.noreply.github.com"
