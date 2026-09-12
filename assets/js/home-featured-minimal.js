@@ -25,13 +25,5 @@
     }
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    applyMinimalFeatured();
-
-    const card = document.querySelector(".featured-card");
-    if (card) {
-      const observer = new MutationObserver(applyMinimalFeatured);
-      observer.observe(card, { childList: true, subtree: true, characterData: true });
-    }
-  });
+  document.addEventListener("DOMContentLoaded", applyMinimalFeatured, { once: true });
 })();
