@@ -75,6 +75,72 @@
       ],
       "relatedArticles": [],
       "featured": false
+    },
+    {
+      "id": "story-002",
+      "title": "Lady Gaga Welcomes Her First Baby With Fiancé Michael Polansky",
+      "slug": "lady-gaga-welcomes-her-first-baby-with-fiance-michael-polansky",
+      "description": "Lady Gaga and fiancé Michael Polansky have welcomed their first child together, marking a meaningful personal milestone for the superstar.",
+      "category": "Entertainment",
+      "date": "2026-09-12",
+      "readTime": "1 min read",
+      "dek": "The superstar and her partner quietly begin parenthood after years of sharing her hopes of starting a family.",
+      "cover": "assets/images/articles/lady-gaga-welcomes-her-first-baby-with-fiance-michael-polansky-cover.jpg",
+      "intro": "Lady Gaga has welcomed her first child with fiancé Michael Polansky, ushering in a major new personal chapter for the global icon. The happy news marks the fulfillment of an ambition the singer and actress has openly shared for years.",
+      "sections": [
+        {
+          "heading": "A Longtime Dream Realized",
+          "paragraphs": [
+            "Reports from outlets including PEOPLE and Vogue confirmed the arrival of the couple's first baby, noting that details such as the child's name and sex have remained private.",
+            "Motherhood is a milestone Gaga has reflected on repeatedly across her career. In a 2024 Vogue interview, she spoke openly about love, family, and her connection with Polansky, acknowledging that having children was a long-held personal aspiration."
+          ]
+        },
+        {
+          "heading": "A Bond Built Away from the Spotlight",
+          "paragraphs": [
+            "Gaga and Polansky began dating around 2019 and became publicly known as a couple in 2020. Their bond deepened significantly during the COVID-19 pandemic, when they spent an extended period together in Malibu away from the demands of public life.",
+            "Polansky has maintained a relatively private profile compared to Gaga's world-famous persona. Following their engagement in 2024, the couple continued to safeguard their private life, keeping their focus grounded as they prepared to expand their family."
+          ]
+        },
+        {
+          "heading": "A Quiet Family Milestone",
+          "paragraphs": [
+            "Known affectionately by millions of fans worldwide as Mother Monster, Gaga now experiences motherhood in the most literal and personal sense. While supporters celebrated the arrival, the family has maintained their privacy, with Gaga's representatives withholding immediate public comment.",
+            "After years defined by high-profile tours, Grammy Awards, and Hollywood screen roles, this next chapter gives Gaga and Polansky the chance to savor family life away from the red carpets and camera flashes."
+          ]
+        }
+      ],
+      "images": [
+        {
+          "src": "assets/images/articles/lady-gaga-welcomes-her-first-baby-with-fiance-michael-polansky-1.webp",
+          "alt": "Lady Gaga discussing her hopes of becoming a mother",
+          "caption": "Lady Gaga has spoken publicly about her hopes of becoming a mother."
+        },
+        {
+          "src": "assets/images/articles/lady-gaga-welcomes-her-first-baby-with-fiance-michael-polansky-2.webp",
+          "alt": "Lady Gaga and Michael Polansky together at the Venice Film Festival",
+          "caption": "Lady Gaga and Michael Polansky have maintained a relatively private relationship since becoming a couple."
+        }
+      ],
+      "closing": "As Lady Gaga and Michael Polansky begin life as parents, they step into a deeply meaningful new season centered around their growing family.",
+      "seo": {
+        "title": "Lady Gaga Welcomes First Baby With Michael Polansky",
+        "description": "Lady Gaga and fiancé Michael Polansky have welcomed their first child, marking an exciting new chapter of motherhood for the singer."
+      },
+      "og": {
+        "title": "Lady Gaga Welcomes First Baby With Michael Polansky",
+        "description": "Lady Gaga and fiancé Michael Polansky have welcomed their first child, marking an exciting new chapter of motherhood for the singer.",
+        "image": "assets/images/articles/lady-gaga-welcomes-her-first-baby-with-fiance-michael-polansky-cover.jpg"
+      },
+      "tags": [
+        "lady gaga",
+        "michael polansky",
+        "celebrity babies",
+        "entertainment news",
+        "pop culture"
+      ],
+      "relatedArticles": [],
+      "featured": false
     }
   ]
 }
