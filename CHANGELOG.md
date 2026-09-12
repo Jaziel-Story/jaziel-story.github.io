@@ -40,12 +40,29 @@ This file is the project memory for repository changes. Read it before making a 
 - **Commit:** `ab238b9e1bd09bb8c772dd8c52833b12e9194117`
 - **Purpose:** Run `node --check` against every JavaScript file in the repository on JavaScript changes or manual dispatch, so future parse errors are caught before a fix is declared complete.
 
-### Recovery — restore stable admin source
-- **Status:** NEEDS DEPLOYMENT VERIFICATION
-- **Files:** `admin/admin.js`, `admin/index.html`
-- **Change:** Restored `admin/admin.js` to the known source from commit `b4f462aa409bae53c6352a586c9c67377d1d7c6f` (blob `2efe32fa7baf32503aed7eac57d4fe1fbb039365`) and restored `admin/index.html` to the direct `admin.js` loading version (blob `58ed6858bc0b49b1b9ff98a92ba8bd10c6e87642`).
-- **Commit:** `65334865f9d484f3f4133267a5951743ac48630a`
-- **Reason:** Remove the risky runtime repair path and return to a source version explicitly committed as the admin syntax repair.
+### Recovery — direct admin source repair
+- **Status:** FIXED IN REPOSITORY / NEEDS LIVE DEPLOYMENT VERIFICATION
+- **File:** `admin/admin.js`
+- **Root cause found:** the `btnSuggestRelated` handler contained a malformed `toast()` call where the template literal ended with a double quote instead of a backtick. That is consistent with the browser's `Unexpected token ')'` parse failure.
+- **Final source basis:** restored from the clean `admin/admin.js` blob from commit `8c7abfa494d8b8de6de35c576472fb4c896ce473` (`309d9b0c461bc8110a9876ca2e675c7c5e704959`), which contains the corrected template-literal syntax.
+- **Final commit:** `5e625f2c4474543b350b14aa3be44b7d616ba2f3`
+- **Important:** This supersedes the earlier recovery commit `65334865f9d484f3f4133267a5951743ac48630a`; do not restore the b4 source again.
+- **Verification:** Source inspection confirms the malformed `toast()` line is corrected. The repository's JS syntax workflow is the authoritative automated check; its push-run result was not exposed by the connected GitHub status wrapper during this repair.
+
+### Temporary repair workflow — created and removed
+- **Status:** REVERTED / CLEANED UP
+- **File:** `.github/workflows/repair-admin-parse.yml`
+- **Created by commit:** `16b47b7b6e401c968b76f6087ea574ec976f7d02`
+- **Removed by commit:** `87794ed5db2dde920b978721abc3962052ef6307`
+- **Purpose:** Emergency recovery mechanism to restore the known admin source from Git history and run `node --check` on the runner.
+- **Reason removed:** It was a one-time repair mechanism and must not remain as normal project architecture.
+
+### Superseded write during recovery
+- **Status:** SUPERSEDED IMMEDIATELY
+- **Commit:** `517e3d61f5b4fcb4b000478d12e087bfe053ffa5`
+- **Issue:** An incomplete manual replacement accidentally truncated the file while attempting a direct repair.
+- **Resolution:** The file was immediately restored from the known clean `8c7abfa...` blob in commit `5e625f2c...`.
+- **Do not reuse:** `517e3d61...` is not a valid source state.
 
 ### Cleanup — remove obsolete runtime loader
 - **Status:** DONE IN REPOSITORY / NEEDS DEPLOYMENT VERIFICATION
@@ -56,7 +73,7 @@ This file is the project memory for repository changes. Read it before making a 
 ### Project memory — change log
 - **Status:** ACTIVE
 - **File:** `CHANGELOG.md`
-- **Commit:** `1402eeb1f72de198e810e6185c7f4b7a7cbdeb31` (created), followed by this update.
+- **Commit:** `1402eeb1f72de198e810e6185c7f4b7a7cbdeb31` (created), followed by subsequent updates.
 - **Rule:** Every future repository change must be recorded here before moving to another fix.
 
 ### Documentation rule
