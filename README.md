@@ -51,8 +51,11 @@ secure about this setup on static GitHub Pages hosting.
   triggers the `.github/workflows/ai-writer.yml` GitHub Actions workflow,
   which holds `GEMINI_API_KEY` as a GitHub Actions secret, calls Gemini
   on GitHub's servers, and writes the structured result to
-  `admin/ai-results/` for the panel to pick up. You always review the
-  generated draft before publishing — nothing is auto-published.
+  `admin/ai-results/` for the panel to pick up. The workflow waits for the
+  request file to be visible on `main` before processing it, preventing the
+  request-checkout race that previously caused a valid AI generation to fail
+  before the result could be committed. You always review the generated
+  draft before publishing — nothing is auto-published.
 
 ### One-time setup for the AI Writer
 
@@ -78,7 +81,8 @@ later, update that single constant — no other file needs to change.
   deployment.
 - `.github/workflows/ai-writer.yml` — runs on demand, triggered by the
   Admin Panel, to turn raw text into a structured article draft with
-  Gemini.
+  Gemini. It waits for the requested file to reach the latest `main` before
+  generation.
 
 ## Repository Change Log
 
@@ -104,6 +108,26 @@ a regression is confirmed.
 - Removed the completed one-time repair workflow in commit
   `93c8332bd088464677d7f10eb9bf12a54c1ae3b6` so emergency repair code does
   not remain in the normal architecture.
+- **Article Schema v1:** unchanged and remains locked.
+
+### 2026-09-12 — AI Writer P1 race-condition fix
+
+- **Priority:** P1 / proven production workflow bug.
+- **File changed:** `.github/workflows/ai-writer.yml`
+- **Root cause:** A request commit could exist on `main` while a manually
+  dispatched workflow started from the preceding branch SHA. The runner
+  could therefore fail to see the request file even though the Admin Panel
+  had successfully committed it. The affected test showed Gemini generation
+  succeeding but the final result/cleanup step failing because the request
+  file was absent from the checked-out revision.
+- **Fix:** After checkout, the workflow now fetches `origin/main` repeatedly
+  for up to 60 seconds and only continues once the exact
+  `admin/ai-requests/<request_id>.json` exists on `origin/main`; it then resets
+  to that latest revision before running Gemini.
+- **Commit:** `4c1f0d561c39b7c82001e6e7584e1ca1749e1a66`
+- **Verification:** Source change reviewed against the proven failure mode.
+  A fresh end-to-end AI Writer run is still required to mark the fix fully
+  VERIFIED LIVE.
 - **Article Schema v1:** unchanged and remains locked.
 
 ### 2026-09-12 — Related Stories
@@ -141,6 +165,12 @@ a regression is confirmed.
   privacy and cleanup strategy before changing architecture.
 - SEO improvements such as sitemap/robots and JSON-LD Article structured data
   can be considered separately from the current Admin repair.
+
+### 🟠 AI Writer verification pending
+
+- The P1 workflow fix is implemented but must be tested with a new AI Writer
+  request. Do not mark it as fully verified until the new request produces a
+  result and the request/result commit completes successfully.
 
 ## Change-control rule
 
