@@ -21,18 +21,42 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Wait for request commit to reach main
+        shell: bash
+        env:
+          REQUEST_ID: ${{ github.event.inputs.request_id }}
+        run: |
+          set -euo pipefail
+          REQUEST_PATH="admin/ai-requests/${REQUEST_ID}.json"
+          for attempt in $(seq 1 30); do
+            git fetch origin main
+            if git cat-file -e "origin/main:${REQUEST_PATH}" 2>/dev/null; then
+              git reset --hard origin/main
+              echo "Found ${REQUEST_PATH} on origin/main."
+              exit 0
+            fi
+            echo "Waiting for ${REQUEST_PATH} on origin/main (attempt ${attempt}/30)…"
+            sleep 2
+          done
+          echo "Request ${REQUEST_PATH} did not become visible on origin/main within 60 seconds."
+          exit 1
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+
       - name: Generate article with Gemini
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           REQUEST_ID: ${{ github.event.inputs.request_id }}
         run: node .github/scripts/generate-article.mjs
+
       - name: Remove temporary request file
         if: always()
         run: rm -f "admin/ai-requests/${{ github.event.inputs.request_id }}.json"
+
       - name: Commit result and cleanup
         if: always()
         run: |
