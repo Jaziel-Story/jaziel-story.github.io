@@ -87,21 +87,23 @@ later, update that single constant — no other file needs to change.
 Git commits first. Do not repeat a change that is already marked DONE unless
 a regression is confirmed.
 
-### 2026-09-12 — Admin Panel recovery
+### 2026-09-12 — Admin Panel recovery & audit
 
-- Fixed the Admin Panel JavaScript parser error identified from the Claude
-  repair bundle: the `[data-image-url]` input listener inside
-  `renderBodyImages()` was missing a closing `}`.
-- Restored the Admin Panel to a clean source before applying the targeted
-  syntax repair, instead of performing another broad rewrite.
-- Removed the obsolete runtime loader and temporary repair workflow after
-  recovery.
-- Added permanent JavaScript syntax validation through
+- Fixed the Admin Panel JavaScript parser issue from the Claude repair
+  bundle: the `[data-image-url]` input listener in `renderBodyImages()` was
+  missing a closing `}`.
+- Restored a clean `admin/admin.js` source and avoided another broad rewrite.
+- Removed obsolete runtime/one-time repair mechanisms after recovery.
+- Added permanent JavaScript syntax validation with
   `.github/workflows/validate-javascript.yml`.
-- Added/maintained `CHANGELOG.md` as the detailed history for repository
-  changes.
-- **Live verification:** Admin Dashboard is now loading successfully and
-  displays the existing article, category, and dashboard statistics.
+- Updated the Admin script cache-busting version in `admin/index.html`.
+- **Live verification:** the deployed Admin Dashboard now loads correctly;
+  the previous `Loading admin panel...` state is gone. The screenshot shows
+  Dashboard, Articles, New Article, Search, Settings, Help, article count,
+  category count, latest article, and Recent Articles.
+- Removed the completed one-time repair workflow in commit
+  `93c8332bd088464677d7f10eb9bf12a54c1ae3b6` so emergency repair code does
+  not remain in the normal architecture.
 - **Article Schema v1:** unchanged and remains locked.
 
 ### 2026-09-12 — Related Stories
@@ -116,7 +118,45 @@ a regression is confirmed.
 - This fix is already complete; do not repeat it unless a new regression is
   confirmed.
 
+## Current Audit Status
+
+### 🟢 Verified / do not repeat
+
+- Admin Panel loads successfully on the live site.
+- Most Popular metadata fix is complete.
+- Related Stories static image-path fix is implemented.
+- Article Schema v1 is locked and unchanged.
+
+### 🔴 Needs user input
+
+- `contact.html` still contains the placeholder email
+  `hello@jaziel-story.example`. It must be replaced with the real contact
+  email; no email address will be invented by the audit.
+
+### 🟡 Needs further audit before modification
+
+- Search/category JavaScript responsibilities appear duplicated across
+  multiple files; map all listeners before refactoring.
+- AI request/result JSON files are stored in the public repository; review
+  privacy and cleanup strategy before changing architecture.
+- SEO improvements such as sitemap/robots and JSON-LD Article structured data
+  can be considered separately from the current Admin repair.
+
+## Change-control rule
+
+For every future repository change:
+
+1. Inspect the current repository and recent commits first.
+2. Check this README and `CHANGELOG.md` before proposing a fix.
+3. Make the smallest targeted change possible.
+4. Do not touch Article Schema v1 unless explicitly approved.
+5. Verify syntax/build/workflow status before declaring success.
+6. Record the exact files, reason, commit SHA, verification, and deployment
+   status in both this README and `CHANGELOG.md`.
+7. If a change is reverted or superseded, record that explicitly so it is
+   never accidentally repeated.
+
 ## Monetization
 
 Adsterra ad slots (`.ad-slot` elements) are unchanged. The Admin Panel does
-ot manage ad code.
+not manage ad code.
