@@ -49,16 +49,25 @@
     });
   }
 
+  function scheduleApply() {
+    setTimeout(apply, 0);
+  }
+
   function init() {
     apply();
+    // Admin's renderBodyImages() rebuilds this list after Add Image.
+    // Refresh after relevant UI events instead of observing the whole
+    // document. This avoids a MutationObserver feedback loop when apply()
+    // itself changes the preview DOM.
+    document.addEventListener("click", e => {
+      if (e.target.closest?.("#btnAddImage, [data-remove-image]")) scheduleApply();
+    }, true);
     document.addEventListener("change", e => {
-      if (e.target.matches && e.target.matches("[data-image-file]")) setTimeout(apply, 0);
+      if (e.target.matches?.("[data-image-file]")) scheduleApply();
     }, true);
     document.addEventListener("input", e => {
-      if (e.target.matches && e.target.matches("[data-image-url]")) setTimeout(apply, 0);
+      if (e.target.matches?.("[data-image-url]")) scheduleApply();
     }, true);
-    new MutationObserver(() => apply()).observe(document.body, { childList:true, subtree:true });
-    setInterval(apply, 500);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once:true });
