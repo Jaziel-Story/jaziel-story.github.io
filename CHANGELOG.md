@@ -14,6 +14,18 @@ This file is the project memory for repository changes. Read it before making a 
 
 ## 2026-09-12
 
+### Live verification — Admin Panel recovered
+- **Status:** VERIFIED LIVE
+- **Evidence:** User screenshot shows the deployed `/admin/` page successfully rendering Dashboard, article count, category count, latest article, Recent Articles, and Edit action. The previous `Loading admin panel...` state is gone.
+- **Result:** Admin Panel JavaScript is executing successfully in the deployed site.
+- **Article Schema v1:** unchanged and remains locked.
+
+### Cleanup — one-time admin repair workflow
+- **Status:** DONE / REMOVED
+- **File:** `.github/workflows/one-time-admin-source-repair.yml`
+- **Removal commit:** `93c8332bd088464677d7f10eb9bf12a54c1ae3b6`
+- **Reason:** The emergency repair workflow is no longer needed after the Admin Panel is live and working. It must not remain as normal project architecture.
+
 ### Fix tracking — Most Popular metadata
 - **Status:** DONE
 - **File:** `assets/css/popular-fix.css`
@@ -27,79 +39,37 @@ This file is the project memory for repository changes. Read it before making a 
 - **Purpose:** Resolve article cover paths correctly when Related Stories runs on `/articles/{slug}.html`.
 - **Commit:** `0516ea890c61b43041925bb980a94c2aaeab1f3f`
 
-### Admin runtime/source repair history
-- A malformed newline in `admin/admin.js` previously caused a JavaScript parse failure and prevented the Admin Panel from starting.
-- A temporary runtime loader was introduced during troubleshooting, then removed, restored, and its path corrected across several commits.
-- The source was rewritten in `b4f462aa409bae53c6352a586c9c67377d1d7c6f` and `8c7abfa494d8b8de6de35c576472fb4c896ce473`.
-- Later troubleshooting commits included `896d50590c0851a3459280095e965106eeb07991`, `d1e6d5c30c0c0ee693d8ec7f36c6562360d99cfc`, and `10939dbf131b3cdc20cd7ed7bc4a64e595d25a56`.
-- **Regression confirmed by user screenshot:** the deployed Admin Panel showed `Admin panel could not start` / `Unexpected token ')'`.
-
 ### Safeguard added — JavaScript syntax validation
 - **Status:** ADDED / MUST PASS
 - **File:** `.github/workflows/validate-javascript.yml`
 - **Commit:** `ab238b9e1bd09bb8c772dd8c52833b12e9194117`
 - **Purpose:** Run `node --check` against every JavaScript file in the repository on JavaScript changes or manual dispatch, so future parse errors are caught before a fix is declared complete.
 
-### Recovery — direct admin source repair
-- **Status:** FIXED IN REPOSITORY / NEEDS LIVE DEPLOYMENT VERIFICATION
+### Recovery — direct admin source repair history
+- **Status:** SUPERSEDED HISTORY / FINAL SOURCE IS WORKING LIVE
 - **File:** `admin/admin.js`
-- **Root cause found:** the `btnSuggestRelated` handler contained a malformed `toast()` call where the template literal ended with a double quote instead of a backtick. That is consistent with the browser's `Unexpected token ')'` parse failure.
-- **Final source basis:** restored from the clean `admin/admin.js` blob from commit `8c7abfa494d8b8de6de35c576472fb4c896ce473` (`309d9b0c461bc8110a9876ca2e675c7c5e704959`), which contains the corrected template-literal syntax.
-- **Final commit:** `5e625f2c4474543b350b14aa3be44b7d616ba2f3`
-- **Important:** This supersedes the earlier recovery commit `65334865f9d484f3f4133267a5951743ac48630a`; do not restore the b4 source again.
-- **Verification:** Source inspection confirms the malformed `toast()` line is corrected. The repository's JS syntax workflow is the authoritative automated check; its push-run result was not exposed by the connected GitHub status wrapper during this repair.
+- Earlier malformed source versions caused `Unexpected token ')'` and `Loading admin panel...` failures. Several emergency repair commits were attempted during troubleshooting.
+- The incomplete manual replacement `517e3d61f5b4fcb4b000478d12e087bfe053ffa5` is invalid and must never be reused.
+- The final clean source was restored from the known-good `8c7abfa494d8b8de6de35c576472fb4c896ce473` basis, with final repository commit `5e625f2c4474543b350b14aa3be44b7d616ba2f3`.
+- A later targeted Claude forensic repair was also applied to the `renderBodyImages()` `[data-image-url]` listener: the missing closing `}` was the confirmed syntax defect in the supplied repair bundle.
+- The Admin Panel is now verified live by the user's screenshot.
+- **Do not perform another broad rewrite of `admin/admin.js` unless a new regression is reproduced and the current source is inspected first.**
 
-### Admin deployment cache bust — added after live screenshot still showed Loading
-- **Status:** APPLIED / NEEDS LIVE VERIFICATION
+### Admin deployment cache bust
+- **Status:** DONE / VERIFIED LIVE
 - **File:** `admin/index.html`
-- **Problem:** The page was still requesting `admin.js?v=20260912-2`, the same cache-busting URL used before the final source repair. A browser/CDN could therefore continue serving the older broken JavaScript even though `main/admin.js` had been repaired.
-- **Change:** Updated the script URL to `admin.js?v=20260912-4` without changing Admin logic or Article Schema v1.
 - **Commit:** `2822ba6a33336f0dea59c206fb5a7e147f98f8c5`
-- **Verification:** Current repository `admin/index.html` now points to the new versioned URL. Live deployment still needs to be checked.
+- **Change:** Updated the Admin script URL to `admin.js?v=20260912-4` so the deployed browser would not keep serving an older broken source.
+- **Verification:** The user's deployed Admin Dashboard now loads successfully.
 
-### Temporary repair workflow — created and removed
-- **Status:** REVERTED / CLEANED UP
-- **File:** `.github/workflows/repair-admin-parse.yml`
-- **Created by commit:** `16b47b7b6e401c968b76f6087ea574ec976f7d02`
-- **Removed by commit:** `87794ed5db2dde920b978721abc3962052ef6307`
-- **Purpose:** Emergency recovery mechanism to restore the known admin source from Git history and run `node --check` on the runner.
-- **Reason removed:** It was a one-time repair mechanism and must not remain as normal project architecture.
-
-### Superseded write during recovery
-- **Status:** SUPERSEDED IMMEDIATELY
-- **Commit:** `517e3d61f5b4fcb4b000478d12e087bfe053ffa5`
-- **Issue:** An incomplete manual replacement accidentally truncated the file while attempting a direct repair.
-- **Resolution:** The file was immediately restored from the known clean `8c7abfa...` blob in commit `5e625f2c...`.
-- **Do not reuse:** `517e3d61...` is not a valid source state.
-
-### Cleanup — remove obsolete runtime loader
-- **Status:** DONE IN REPOSITORY / NEEDS DEPLOYMENT VERIFICATION
+### Cleanup — obsolete runtime loader
+- **Status:** DONE
 - **File:** `admin/admin-loader-fix.js`
 - **Commit:** `26c58117d3900eca3bee8ee6a744925b4ac105ce`
-- **Reason:** `admin/index.html` no longer references the runtime loader, so the obsolete repair file was removed to prevent future confusion.
-
-### Project memory — change log
-- **Status:** ACTIVE
-- **File:** `CHANGELOG.md`
-- **Commit:** `1402eeb1f72de198e810e6185c7f4b7a7cbdeb31` (created), followed by subsequent updates.
-- **Rule:** Every future repository change must be recorded here before moving on to another fix.
-
-### Admin Panel — Claude forensic syntax fix applied
-- **Status:** APPLIED / VALIDATION + LIVE DEPLOYMENT PENDING
-- **File:** `admin/admin.js`
-- **Source:** User-provided Claude AI repair bundle `JAZIEL_Admin_Panel_Fix_Bundle.zip`.
-- **Confirmed root cause:** Missing `}` in `renderBodyImages()` on the `[data-image-url]` input listener, causing `SyntaxError: Unexpected token ')'`.
-- **Intended change:** Add the single missing `}` so the listener closes correctly.
-- **Repository commit:** `765c0e8fc221cfe074607006ef7cad276aa5581f`
-- **Commit message:** `Fix admin panel renderBodyImages syntax`
-- **Pre-change blob:** `12a3e3b40fc6ced566bc1ab03c09259aafea68b1`
-- **Post-change blob:** `aa9621df0698503c268eeb1c1c3fed3f8fe0714d`
-- **Scope:** No Article Schema v1, `articles.json`, Most Popular, Preview system, or dependency files were intentionally changed.
-- **Verification so far:** GitHub compare confirms only `admin/admin.js` changed in this commit. Claude's supplied repaired `admin.js` independently passed `node --check` in the uploaded bundle. Repository-level Actions validation and live `/admin/` behavior remain to be verified before declaring the fix complete.
-- **Important:** Do not declare this fix fully DONE until the repository's JavaScript validation passes and `/admin/` is tested after GitHub Pages deployment.
+- **Reason:** The Admin Panel now loads the real `admin.js` directly; the temporary runtime loader was removed to avoid hiding future source errors.
 
 ### Documentation rule
-From this point forward, every repository change must be recorded in this file before moving on to another fix. The record must include:
+Every repository change must be recorded in this file and summarized in `README.md`. The record must include:
 1. Date
 2. Priority/reason
 3. Exact files changed
@@ -109,3 +79,23 @@ From this point forward, every repository change must be recorded in this file b
 7. Verification result
 8. Deployment result when applicable
 9. Whether the change is DONE, NEEDS VERIFICATION, or REVERTED
+
+## Known remaining audit items
+
+### 🔴 Contact email is still a placeholder
+- **File:** `contact.html`
+- **Current value:** `hello@jaziel-story.example`
+- **Status:** NEEDS USER INPUT / NOT FIXED
+- **Reason:** The page itself tells the owner to replace it with a real contact email. Do not invent an email address.
+
+### 🟡 Search/category code duplication
+- **Status:** NEEDS FURTHER AUDIT
+- **Reason:** Search/category behavior appears across multiple JavaScript files. Refactor only after mapping all event listeners and responsibilities.
+
+### 🟡 AI request/result files
+- **Status:** NEEDS FURTHER AUDIT
+- **Reason:** Raw AI request/result JSON files are stored in the public repository. Review privacy and cleanup strategy before changing architecture.
+
+### 🟡 SEO enhancements
+- **Status:** RECOMMENDATION / NOT FIXED
+- Potential items include sitemap/robots, JSON-LD Article structured data, and ensuring fallback/dynamic article routes do not create duplicate indexing concerns.
