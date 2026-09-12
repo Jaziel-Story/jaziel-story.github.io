@@ -2,8 +2,9 @@
    JAZIEL ADMIN — Numbered Section Labels
    UI helper only. Article Schema v1 remains unchanged.
 
-   Uses editor events instead of a persistent MutationObserver so label
-   updates cannot create a DOM-observer feedback loop.
+   Uses bounded event-driven refreshes instead of a persistent
+   MutationObserver so dynamic editor rendering is covered without
+   creating a DOM-observer feedback loop.
    ========================================================= */
 
 (() => {
@@ -21,15 +22,20 @@
     });
   }
 
-  function scheduleUpdate() {
-    requestAnimationFrame(updateSectionLabels);
+  function scheduleRefreshBurst() {
+    [0, 60, 180, 360, 700].forEach(delay => setTimeout(updateSectionLabels, delay));
   }
 
   function init() {
     updateSectionLabels();
+
     document.addEventListener("click", event => {
-      if (event.target.closest?.("#btnAddSection, [data-remove-section]")) scheduleUpdate();
+      if (event.target.closest?.("#btnAddSection, [data-remove-section], a[href^=\"#/editor/\"]")) {
+        scheduleRefreshBurst();
+      }
     }, true);
+
+    window.addEventListener("hashchange", scheduleRefreshBurst);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
