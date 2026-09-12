@@ -29,17 +29,12 @@
     const root = document.getElementById("previewRoot");
     if (!root) return;
 
-    let busy = false;
     const observer = new MutationObserver(() => {
-      if (busy) return;
-      busy = true;
-      observer.takeRecords();
+      observer.disconnect();
       mapPreviewImages();
-      busy = false;
     });
 
     observer.observe(root, { childList: true, subtree: true });
-    mapPreviewImages();
   }
 
   if (document.readyState === "loading") {
