@@ -140,3 +140,5 @@
   window.renderArticle = paginatedRenderArticle;
   document.addEventListener("DOMContentLoaded", activateStaticPage);
 })();
+
+/* Regeneration trigger: keep static generated pages aligned with this helper. */
