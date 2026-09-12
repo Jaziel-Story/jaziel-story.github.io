@@ -161,9 +161,17 @@
     return section;
   }
 
+  function resolveMediaUrl(src) {
+    const raw = String(src || "").trim();
+    if (!raw) return "";
+    if (/^(?:https?:|data:|blob:)/i.test(raw)) return raw;
+    const clean = raw.replace(/^\/+/, "");
+    return isStaticArticle ? `../${clean}` : clean;
+  }
+
   function storyCardHTML(article) {
     const cover = article.cover
-      ? `style="background-image:url('${escapeAttribute(article.cover)}');background-size:cover;background-position:center"`
+      ? `style="background-image:url('${escapeAttribute(resolveMediaUrl(article.cover))}');background-size:cover;background-position:center"`
       : "";
     const href = isStaticArticle
       ? `${encodeURIComponent(article.slug)}.html`
