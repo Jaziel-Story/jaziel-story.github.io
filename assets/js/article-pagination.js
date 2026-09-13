@@ -47,6 +47,54 @@
     return `${heading}${paragraphs}${image}`;
   }
 
+  function setArticleStructuredData(articleUrl) {
+    const article = document.querySelector(".article");
+    if (!article) return;
+
+    const existing = document.getElementById("jaziel-article-structured-data");
+    if (existing) existing.remove();
+
+    const title = article.querySelector(".article-title")?.textContent?.trim() || document.title;
+    const description = document.querySelector('meta[name="description"]')?.content || "";
+    const image = document.querySelector('meta[property="og:image"]')?.content || "";
+    const storyMeta = article.querySelector(".story-meta")?.textContent?.trim() || "";
+    const dateMatch = storyMeta.match(/(\d{4}-\d{2}-\d{2})$/);
+    const datePublished = dateMatch ? dateMatch[1] : "";
+
+    const data = {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": title,
+      "description": description,
+      "mainEntityOfPage": { "@type": "WebPage", "@id": articleUrl },
+      "author": { "@type": "Organization", "name": "Jaziel", "url": "https://jaziel-story.github.io/" },
+      "publisher": { "@type": "Organization", "name": "Jaziel", "url": "https://jaziel-story.github.io/" },
+      "inLanguage": "en"
+    };
+
+    if (image) data.image = [image];
+    if (datePublished) {
+      data.datePublished = datePublished;
+      data.dateModified = datePublished;
+    }
+
+    const script = document.createElement("script");
+    script.id = "jaziel-article-structured-data";
+    script.type = "application/ld+json";
+    script.textContent = JSON.stringify(data).replace(/</g, "\\u003c");
+    document.head.appendChild(script);
+  }
+
+  function setDynamicCanonical(article, current) {
+    const slug = article?.slug || "";
+    if (!slug) return "";
+    const base = `${window.location.origin}/articles/${encodeURIComponent(slug)}.html`;
+    const canonicalURL = current === 1 ? base : `${base}?page=${current}`;
+    setMeta('link[rel="canonical"]', "href", canonicalURL);
+    setMeta('meta[property="og:url"]', "content", canonicalURL);
+    return canonicalURL;
+  }
+
   function paginatedRenderArticle(root, article) {
     if (!root) return;
 
@@ -105,6 +153,9 @@
         ${tagsHTML}
       </article>
     `;
+
+    const canonicalURL = setDynamicCanonical(article, current);
+    if (canonicalURL) setArticleStructuredData(canonicalURL);
   }
 
   function activateStaticPage() {
@@ -141,6 +192,7 @@
     const canonicalURL = current === 1 ? canonical : `${canonical}?page=${current}`;
     setMeta('link[rel="canonical"]', "href", canonicalURL);
     setMeta('meta[property="og:url"]', "content", canonicalURL);
+    setArticleStructuredData(canonicalURL);
   }
 
   window.renderArticle = paginatedRenderArticle;
