@@ -85,16 +85,6 @@
     document.head.appendChild(script);
   }
 
-  function setDynamicCanonical(article, current) {
-    const slug = article?.slug || "";
-    if (!slug) return "";
-    const base = `${window.location.origin}/articles/${encodeURIComponent(slug)}.html`;
-    const canonicalURL = current === 1 ? base : `${base}?page=${current}`;
-    setMeta('link[rel="canonical"]', "href", canonicalURL);
-    setMeta('meta[property="og:url"]', "content", canonicalURL);
-    return canonicalURL;
-  }
-
   function paginatedRenderArticle(root, article) {
     if (!root) return;
 
@@ -153,9 +143,6 @@
         ${tagsHTML}
       </article>
     `;
-
-    const canonicalURL = setDynamicCanonical(article, current);
-    if (canonicalURL) setArticleStructuredData(canonicalURL);
   }
 
   function activateStaticPage() {
