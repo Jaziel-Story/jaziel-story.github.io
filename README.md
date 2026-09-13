@@ -60,6 +60,18 @@ a maximum of **2 sections per page**. The first page is the default when no
 - Dynamic `article.html?slug=...` remains a legacy fallback; the sitemap points only to canonical static article URLs.
 - Search/category query pages are intentionally not listed in the sitemap.
 
+## Workflow push hardening
+
+On 2026-09-13, the static article generator was hardened after a real Admin publish exposed a race between the static generator and sitemap workflow. The generator successfully created the article HTML but its push was rejected because another workflow had updated `main` first.
+
+- `.github/workflows/generate-static-articles.yml` now uses the shared `jaziel-main-writers` concurrency group with `cancel-in-progress: false`.
+- `.github/workflows/generate-sitemap.yml` uses the same writer lock so repository-writing workflows are serialized instead of racing on `main`.
+- Both workflows fetch `origin/main`, rebase before pushing, retry up to three times, and fail safely if the push still cannot be completed.
+- The Admin test article `Jaziel Image Upload Test` was successfully regenerated as `articles/jaziel-image-upload-test.html` after the fix, including its 3 sections, images, pagination, closing, and ad slots.
+- Article Schema v1, pagination rules, and article content structure were not changed.
+
+This approach follows GitHub Actions concurrency behavior: workflows sharing a concurrency group can be serialized, preventing simultaneous repository-writing runs from conflicting. citeturn0search0turn0search1
+
 ## Admin Panel
 
 ```
@@ -113,6 +125,7 @@ update that single constant — no other file needs to change.
 - `.github/workflows/ai-writer.yml` — runs on demand, triggered by the Admin
   Panel, to turn raw text into a structured article draft with Gemini.
 - `.github/workflows/generate-sitemap.yml` — regenerates the XML sitemap from the current article list.
+- `.github/workflows/generate-static-articles.yml` — generates canonical static article HTML from `articles.json` and safely writes the generated files back to `main`.
 
 ## Repository Change Log
 
@@ -121,95 +134,87 @@ update that single constant — no other file needs to change.
 commits first. Do not repeat a change that is already marked DONE unless a
 regression is confirmed.
 
+### 2026-09-13 — Workflow push hardening
+
+- **Priority:** P1 / prevent the real `main` push race that caused a published Admin article to exist in `articles.json` while its generated static HTML remained only inside a failed workflow runner.
+- **Files changed:** `.github/workflows/generate-static-articles.yml`, `.github/workflows/generate-sitemap.yml`.
+- **Change:** Added the shared `jaziel-main-writers` concurrency group with queued execution, plus fetch/rebase/retry push handling in both repository-writing workflows.
+- **Reason:** A real Admin publish produced a non-fast-forward rejection in the generator when the sitemap workflow pushed first.
+- **Commits:** `fff782a471f8118addd1b9cf8bb1c4d300969a7e`, `30a629014ddb521e3e18d8f4699323c157332619`, `10a00e0469ae15d88fb6246864689cb1b973a9c1`, `6bafaaaa326889233335429ed185b9bbc146d05a`.
+- **Verification:** Generator successfully created `articles/jaziel-image-upload-test.html` and pushed it to `main`. The generated page contains the test article's cover, three sections/images, pagination, closing, and ad slots.
+- **Status:** IMPLEMENTED / PIPELINE LIVE VERIFICATION CONTINUES.
+
 ### 2026-09-13 — SEO/indexability foundation
 
 - **Priority:** P1 / remove technical discovery gaps found in the repository SEO audit.
 - **Files changed:** `robots.txt`, `sitemap.xml`, `.github/workflows/generate-sitemap.yml`, `index.html`, `assets/js/article-pagination.js`.
-- **Change:** Added a permissive robots.txt with the sitemap declaration; added the current canonical sitemap and automatic sitemap regeneration from `articles.json`; added a self-referencing homepage canonical and WebSite JSON-LD; added Article JSON-LD for static article pages; kept pagination behavior and Article Schema v1 unchanged.
+- **Change:** Added robots.txt with the sitemap declaration; added sitemap and automatic regeneration from `articles.json`; added homepage canonical and WebSite JSON-LD; added Article JSON-LD for static article pages; kept pagination and Article Schema v1 unchanged.
 - **Canonical policy:** Static paginated article URLs use the active page URL as their canonical signal (`?page=N` for Page 2+). The legacy dynamic `article.html?slug=...` route is not included in the sitemap.
-- **Reason:** Repository audit found no robots.txt, no sitemap.xml, no homepage canonical, and no article structured data. These were identified as SEO/indexability improvements, not a `noindex` blocker.
-- **Google guidance:** Google recommends submitting a sitemap and supports Article structured data; for multi-part articles, Google documents using an individual-page canonical or a view-all canonical. The implementation keeps the static article pagination model and uses active-page canonical signals. citeturn6search4turn3search0
+- **Reason:** The audit found no robots.txt, sitemap.xml, homepage canonical, or article structured data.
 - **Article Schema:** unchanged and locked.
-- **Verification:** Repository source was re-audited after each change. Sitemap generator escaping was corrected before finalizing. Final live indexing still requires Google Search Console URL Inspection and sitemap submission.
-- **Status:** IMPLEMENTED / NEEDS GITHUB ACTIONS + LIVE SEO VERIFICATION.
+- **Verification:** Source was re-audited after each change. Sitemap escaping was corrected before finalizing. Search Console live indexing was subsequently tested for the homepage and a correct static Lady Gaga URL.
+- **Status:** IMPLEMENTED / LIVE SEARCH CONSOLE VERIFICATION IN PROGRESS.
 
 ### 2026-09-13 — Adsterra site-wide integration
 
-- **Priority:** P1 / add the approved Adsterra formats without changing Article Schema or pagination.
-- **Files:** ad integration helper and static article generation path from the uploaded fixed repository package.
-- **Change:** Added site-wide Popunder and Social Bar, responsive Banner handling for 300×250 desktop/tablet and 320×50 mobile, and Native Banner handling with duplicate-container protection.
-- **Important rule:** Popunder/Social Bar are loaded once per HTML document; Adult Ads and Smartlink were not enabled.
-- **Verification:** User confirmed GitHub Actions validation and Pages deployment succeeded. Homepage testing showed Social Bar and banner delivery; blank ad slots were treated as network no-fill rather than code failure.
+- **Priority:** P1 / add approved Adsterra formats without changing Article Schema or pagination.
+- **Files:** ad integration helper and static article generation path.
+- **Change:** Added site-wide Popunder and Social Bar, responsive 300×250 desktop/tablet and 320×50 mobile banners, and Native Banner handling with duplicate-container protection.
+- **Important rule:** Popunder/Social Bar load once per HTML document; Adult Ads and Smartlink were not enabled.
+- **Verification:** GitHub Actions validation and Pages deployment succeeded. Homepage testing showed Social Bar and banner delivery; blank ad slots were treated as network no-fill rather than code failure.
 - **Commit:** `4175a362763009610e630b0552a52ce58bd5088d` (`4175a36`).
 - **Status:** DEPLOYED / LIVE TESTING CONTINUES.
 
 ### 2026-09-13 — Article pagination display refinement
 
-- **Priority:** P2 / refine the visual continuation flow after live review without changing pagination behavior.
+- **Priority:** P2 / refine continuation display without changing pagination behavior.
 - **Files changed:** `assets/js/article-pagination.js`.
-- **Change:** Kept the article title visible on every pagination page, while showing the dek and read-time/date metadata only on Page 1. The cover remains Page-1-only.
-- **Reason:** User approved the cleaner Page 2 presentation: title retained for context, repeated dek/metadata removed.
+- **Change:** Kept the article title visible on every pagination page while hiding dek/read-time/date metadata after Page 1. The cover remains Page-1-only.
+- **Reason:** Cleaner Page 2 presentation while retaining article context.
 - **Commits:** `d23190ddec29c1b1cfbd735a3a43ced8a177e137`, `41d9920695782654ac0b7e066544f770a2c8816a`, `67f423b6edb6ffb24e29b8daaab970945cb47e65`.
-- **Verification:** Source audit confirmed Page 2 contains only continuation sections/images/closing content; user visually confirmed the cover is no longer repeated on Page 2. Pagination controls were not changed.
-- **Deployment:** User live screenshot confirmed the Page-2 cover removal; the latest dek/metadata refinement needs live browser confirmation after deployment.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
 ### 2026-09-13 — Article pagination implemented
 
-- **Priority:** P1 / improve long-article readability and continuation flow while keeping Article Schema v1 unchanged.
+- **Priority:** P1 / improve long-article readability while keeping Article Schema v1 unchanged.
 - **Files changed:** `assets/js/article-pagination.js`, `assets/css/article-pagination.css`, `article.html`, `.github/workflows/generate-static-articles.yml`.
-- **Change:** Added max-2-sections-per-page pagination, default Page 1 behavior, numbered page navigation, Page X of Y status, Continue Reading CTA, sequential section/image mapping, and static-page generation support.
-- **URL behavior:** Static article pages use `articles/{slug}.html?page=N`; Page 1 is also the default when `page` is absent. The dynamic fallback uses `article.html?slug={slug}&page=N`.
-- **SEO:** Static generated pages retain the base article canonical at generation time; the pagination helper updates the canonical/OG URL for the active page in the browser.
-- **Important cleanup:** Removed the stale `assets/js/link-fix.js` script reference from `article.html`; the obsolete helper remains deleted and is not restored.
-- **Reason:** User approved pagination design A+B+C and the recommendation that missing `page` defaults to Page 1.
+- **Change:** Added maximum-2-sections-per-page pagination, numbered navigation, Page X of Y, Continue Reading, sequential section/image mapping, and static generation support.
+- **URL behavior:** Static article pages use `articles/{slug}.html?page=N`; missing `page` means Page 1. Dynamic fallback uses `article.html?slug={slug}&page=N`.
+- **Cleanup:** Removed the stale `assets/js/link-fix.js` script reference from `article.html`.
 - **Commits:** `b6c2362564b9f405618b5411219d9f2c791d1251`, `ba70730c3ed0cdea69751206f15b96d1d48feca1`, `6eacf514d273c20c6785d9fed2f0b446126663ce`, `35962fc55d94eaad8bb999511648bc355a1accf8`, `bf8d4609cf17b22b695d493e4e4b86d55e6bdfba`.
-- **Verification:** `node --check` passed for the pagination helper and generator test script. A local fixture generator test confirmed 5 sections produce 3 page containers, Continue Reading controls, Page 1 of 3, and sequential images 1–5. Fresh GitHub Actions and live Pages verification remain pending.
-- **Deployment:** GitHub Actions/static-page regeneration and live browser verification pending.
+- **Verification:** `node --check` passed and a 5-section fixture produced 3 pages with ordered images.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
 ### 2026-09-13 — Website OG cover metadata
 
-- **Priority:** P2 / add the website Open Graph/social sharing cover.
+- **Priority:** P2 / add website Open Graph/social sharing cover.
 - **Files changed:** `assets/images/og/jaziel-og-cover.png`, `index.html`.
-- **Change:** Added the Jaziel OG cover image and website-level Open Graph/Twitter metadata pointing to the cover.
-- **Reason:** User requested a website OG cover.
-- **Commit:** `afcfa4ad5f7301fc319c6f0c722792268393cbb2` for the metadata update; image rename/addition was committed immediately before it in `99f919e87a390aeeb266942a9472f0102f9cc4c1`.
-- **Verification:** User confirmed the OG image appears successfully. Source metadata was also checked against the repository file path.
-- **Deployment:** User confirmed the image appears; broader social-platform cache verification is not claimed.
+- **Change:** Added the Jaziel OG cover and website-level Open Graph/Twitter metadata.
+- **Commits:** `99f919e87a390aeeb266942a9472f0102f9cc4c1`, `afcfa4ad5f7301fc319c6f0c722792268393cbb2`.
+- **Verification:** User confirmed the OG image appears successfully.
 - **Status:** DONE / USER VERIFIED.
 
 ### 2026-09-13 — Contact email updated
 
-- **Priority:** P2 / replace the public placeholder contact address with the real site-owner email supplied by the user.
-- **File changed:** `contact.html`.
-- **Change:** Replaced `hello@jaziel-story.example` with `michaelgilroyjitmau2@gmail.com` in both the visible email link and its `mailto:` target; removed the placeholder instruction.
-- **Reason:** The user confirmed the correct contact email.
+- **Priority:** P2 / replace public placeholder contact address.
+- **File:** `contact.html`.
+- **Change:** Replaced `hello@jaziel-story.example` with the user-confirmed contact email in the visible link and mailto target.
 - **Commit:** `59069f9ccd8d97bde1dead9fa5859aa3e2d681a6`.
-- **Verification:** Source update committed successfully. No Article Schema or application JavaScript was changed.
-- **Deployment:** GitHub Pages deployment/live rendering still requires confirmation after the commit.
 - **Status:** DONE / NEEDS LIVE DEPLOYMENT VERIFICATION.
 
 ### 2026-09-13 — Admin P1–P2 audit hardening
 
 - **Priority:** P1–P2 / prevent known regressions, observer feedback loops, stale browser code, and image/draft inconsistencies.
-- **P1:** `.github/workflows/generate-static-articles.yml` no longer creates or injects the obsolete `link-fix.js`, preventing future article generation from restoring the removed global observer.
-- **P1:** `assets/js/admin-section-labels.js` no longer uses a persistent `MutationObserver`. It uses bounded event-driven refreshes after editor navigation/add/remove actions, covering dynamic editor rendering without an observer feedback loop.
-- **P1:** `assets/js/admin-preview-order-fix.js` now targets `#btnPreview` and retries for a few animation frames so asynchronous Preview rendering is handled without a persistent observer or interval.
-- **P1/P2:** `assets/js/ai-writer-category-fix.js` no longer observes the whole document. Its temporary observer is scoped to the active AI status/view and disconnects after success or failure.
-- **P2:** `assets/js/image-manager.js` now accepts safe Jaziel repository image paths as well as HTTP(S) URLs, while retaining the existing 10 MB/type guard.
-- **P2:** draft image persistence now clears stale body-image IndexedDB entries by draft-key prefix before saving the current selection.
-- **Cache protection:** audited Admin helper scripts are cache-busted in `admin/index.html`.
-- **Schema:** Article Schema v1 was not changed.
 - **Files changed:** `.github/workflows/generate-static-articles.yml`, `assets/js/admin-section-labels.js`, `assets/js/ai-writer-category-fix.js`, `assets/js/image-manager.js`, `assets/js/admin-preview-order-fix.js`, `admin/index.html`.
+- **Change:** Removed persistent observers from audited helpers, bounded Preview repair to the Preview action, scoped AI status watching, added safe repository-image URL support, cleaned stale draft-image IndexedDB entries, and cache-busted audited Admin helpers.
+- **Article Schema v1:** unchanged and locked.
 - **Commits:** `09cb3be8d3373c69ff70d84bac692f690d473ab0`, `4d111022dda3645763322d7970f47b07a785193e`, `75b5322707d2b6633497b24a56695c6807faf93e`, `e8d43ef9541105c131ade130b2027f4705d8b999`, `b6da7f8bf41f125300549f2d983a12248db1449f`, `b215a6488313b57637758587d40f242cf3a8b50a`, `8b80a7dccc7c59c10a86c363dfdfa27d6f2e4d60`.
-- **Verification:** JavaScript validation successfully passed on hardening commits `e8d43ef...`, `b6da7f8...`, and `b215a648...`. The latest section-label refinement `75b53227...` was also checked with `node --check`. Fresh full workflow and live Admin E2E testing remain pending.
-- **Deployment:** GitHub Pages/live verification pending.
+- **Verification:** JavaScript validation passed on the hardening commits and `node --check` passed for the section-label refinement.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
 ### Protected fixes register — do not revert without a confirmed regression
 
-These are protected baseline fixes. If a future bug appears, **do not immediately modify or remove these files because they look related**. First reproduce the bug, inspect the current version, check this README and `CHANGELOG.md`, and compare the relevant commit.
+These are protected baseline fixes. If a future bug appears, do not immediately modify or remove these files because they look related. First reproduce the bug, inspect the current version, check this README and `CHANGELOG.md`, and compare the relevant commit.
 
 - `index.html` + `home-featured-minimal.js` + `home-latest-final.js` — homepage loader/observer consolidation. Do not restore deleted competing loaders.
 - `assets/js/admin-section-labels.js` — bounded event-driven labels; do not restore a persistent DOM observer without a reproduced regression.
@@ -219,21 +224,16 @@ These are protected baseline fixes. If a future bug appears, **do not immediatel
 - `.github/workflows/generate-static-articles.yml` — must not recreate `assets/js/link-fix.js` or inject it into pages.
 - `articles.json` — single source of truth and Article Schema v1; do not change its structure as a workaround for an Admin UI bug.
 
-**Bug investigation rule:** For a new bug, first classify it as a regression in a protected fix or an independent defect. Use the smallest targeted fix. Record the affected protected commit, the new commit, verification, deployment result, and whether the old fix remains intact. Never "clean up" a protected fix merely because it is nearby code.
-
 ### 2026-09-12 — Admin Preview image order fix
 
-- **Priority:** P1 / user screenshot confirmed Body Images were rendered after Section 3 instead of in section order.
-- **Finding:** The live Preview showed both existing body figures at the end. The missing Section 3 image is intentionally postponed. Required behavior: Body Image 1 after Section 1, Body Image 2 after Section 2, and no image after Section 3 until one is added.
-- **Fix:** Added `assets/js/admin-preview-order-fix.js` and loaded it with a cache-busted script reference. Article data and Schema v1 were untouched.
-- **Commits:** `8e8c3af2288eac967a47452fd5ae6f5e96c017f0`, `d134c30290e30a3fa285b54899812145f659c47a`.
-- **Later hardening:** `b215a6488313b57637758587d40f242cf3a8b50a` added bounded animation-frame retries for asynchronous Preview rendering.
+- **Priority:** P1 / body images must appear after their matching section.
+- **Fix:** Added `assets/js/admin-preview-order-fix.js`; later hardened with bounded animation-frame retries.
+- **Commits:** `8e8c3af2288eac967a47452fd5ae6f5e96c017f0`, `d134c30290e30a3fa285b54899812145f659c47a`, later `b215a6488313b57637758587d40f242cf3a8b50a`.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
 ### 2026-09-12 — Admin Preview stability + Body Image relative-path fix
 
-- **Priority:** P1 / Preview refresh/stuck behavior and missing Body Image previews for repository-relative paths.
-- **Fix:** Removed the persistent `admin-preview-section-mapping.js` observer approach and kept `admin/admin.js` untouched. Updated `body-image-preview.js` to resolve relative repository paths.
+- **Fix:** Removed the persistent Preview mapping observer approach and updated `body-image-preview.js` to resolve relative repository paths.
 - **Commits:** `3bc626b6f7521f1bf96512f5585dd28cc4b1836d`, `9bac5ef22f98f850c97079df431ea0c63be4da90`, `56e7a982294e438464c4f0a91a26a147fc228753`.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
@@ -244,41 +244,28 @@ These are protected baseline fixes. If a future bug appears, **do not immediatel
 - **Commits:** `aa690bb0658960d0d3b0871e2e7452b73db3f10b`, `184a89b922fb860079dcd80efadfd87bbc97122b`, `f58ab89ccda1b0183ef636b76b4da46ed0de67cd`, `83bb01c1d20d82de509a4467d2906675fe8a7580`.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
-### 2026-09-12 — Admin Panel recovery & audit
-
-- Fixed the Admin Panel JavaScript parser issue.
-- Restored a clean `admin/admin.js` source and avoided another broad rewrite.
-- Removed obsolete runtime/one-time repair mechanisms.
-- Added permanent JavaScript syntax validation.
-- The deployed Admin Panel was verified working by user screenshot.
-
 ## Current Audit Status
 
 ### 🟢 Verified / do not repeat
 
 - Admin Panel loads successfully on the live site.
-- Most Popular metadata fix is complete.
-- Related Stories static image-path fix is implemented.
 - Article Schema v1 is locked and unchanged.
-- Admin Preview has been checked by the user and confirmed safe.
-- Public Contact email is now set to the user-confirmed email address.
 - Website OG cover image was confirmed visible by the user.
-- SEO foundation files are now present in the repository.
+- SEO foundation files are present in the repository.
+- Static generator successfully regenerated the Admin test article after workflow push hardening.
 
 ### 🟡 Needs live verification
 
-- Latest Admin P1–P2 hardening.
-- Homepage loader/observer cleanup.
-- AI Writer P1 workflow fix.
-- GitHub Pages deployment of the latest contact email change.
+- Final GitHub Pages deployment after the latest workflow/documentation commits.
 - Article pagination across 1-, 2-, 3-, 4-, 5-, and 6-section articles.
-- Latest Page-2 display refinement: title retained; dek/read-time metadata hidden after Page 1.
-- Google Search Console URL Inspection and sitemap processing.
+- Latest Page-2 display refinement.
+- Google Search Console sitemap processing and URL Inspection for new articles.
 - Rich Results Test / rendered JSON-LD validation for article pages.
+- Full Admin Edit Article and Draft end-to-end testing.
 
 ### 🟠 AI Writer privacy / E2E review pending
 
-- AI request/result JSON remains repository-backed. In a public repository, those contents can be publicly readable. This was not moved during this hardening pass because changing the transport would be a separate architecture decision and could break the working AI flow.
+- AI request/result JSON remains repository-backed. In a public repository, those contents can be publicly readable. Moving this transport would be a separate architecture decision.
 - A fresh end-to-end AI Writer test is still required.
 
 ## Change-control rule
@@ -291,7 +278,7 @@ For every future repository change:
 4. Do not touch Article Schema v1 unless explicitly approved.
 5. Verify syntax/build/workflow status before declaring success.
 6. Record the exact files, reason, commit SHA, verification, and deployment status in both this README and `CHANGELOG.md`.
-7. If a change is reverted or superseded, record that explicitly so it is never accidentally repeated.
+7. If a change is reverted or superseded, record that explicitly.
 
 ## Monetization
 
