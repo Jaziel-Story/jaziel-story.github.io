@@ -146,6 +146,68 @@
       ],
       "relatedArticles": [],
       "featured": false
+    },
+    {
+      "id": "story-003",
+      "title": "Jaziel Draft Manager Test",
+      "slug": "jaziel-draft-manager-test",
+      "description": "Testing the new GitHub-backed draft system.",
+      "category": "Technology",
+      "date": "2026-09-13",
+      "readTime": "",
+      "dek": "",
+      "cover": "assets/images/articles/jaziel-draft-manager-test-cover.jpg",
+      "intro": "This is a temporary test article for the Jaziel Draft Manager.",
+      "sections": [
+        {
+          "heading": "First Test Section",
+          "paragraphs": [
+            "This is the first section of our draft manager test."
+          ]
+        },
+        {
+          "heading": "Second Test Section",
+          "paragraphs": [
+            "This is the second section of our draft manager test."
+          ]
+        },
+        {
+          "heading": "Third Test Section",
+          "paragraphs": [
+            "This is the third section of our draft manager test."
+          ]
+        }
+      ],
+      "images": [
+        {
+          "src": "assets/images/articles/jaziel-draft-manager-test-1.webp",
+          "alt": "People traveling by boat on a calm tropical lake",
+          "caption": "A peaceful boat journey across a tropical lake."
+        },
+        {
+          "src": "assets/images/articles/jaziel-draft-manager-test-2.webp",
+          "alt": "Technology interface displayed on a laptop screen",
+          "caption": "A technology interface used for testing."
+        },
+        {
+          "src": "assets/images/articles/jaziel-draft-manager-test-3.webp",
+          "alt": "Person working on a computer at a desk",
+          "caption": "A simple workspace for testing the Jaziel draft system."
+        }
+      ],
+      "closing": "This test confirms that Jaziel’s new draft system can save, review, and prepare articles safely before publication.",
+      "seo": {
+        "title": "Jaziel Draft Manager Test | Jaziel",
+        "description": "Testing the new GitHub-backed draft system."
+      },
+      "og": {
+        "title": "Jaziel Draft Manager Test",
+        "description": "Testing the new GitHub-backed draft system.",
+        "image": "assets/images/articles/jaziel-draft-manager-test-cover.jpg"
+      },
+      "tags": [],
+      "relatedArticles": [],
+      "featured": false
     }
   ]
 }
