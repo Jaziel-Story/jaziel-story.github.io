@@ -42,7 +42,7 @@ jobs:
           for (const article of (data.articles || [])) {
             if (!article || !article.slug) continue;
             const entry = { loc: `${site}articles/${article.slug}.html` };
-            if (/^\\d{4}-\\d{2}-\\d{2}$/.test(String(article.date || ''))) {
+            if (/^\d{4}-\d{2}-\d{2}$/.test(String(article.date || ''))) {
               entry.lastmod = article.date;
             }
             urls.push(entry);
@@ -53,9 +53,9 @@ jobs:
             `    <loc>${esc(url.loc)}</loc>`,
             url.lastmod ? `    <lastmod>${esc(url.lastmod)}</lastmod>` : '',
             '  </url>'
-          ].filter(Boolean).join('\\n')).join('\\n');
+          ].filter(Boolean).join('\n')).join('\n');
 
-          const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\\n${body}\\n</urlset>\\n`;
+          const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
           fs.writeFileSync('sitemap.xml', sitemap);
           NODE
 
