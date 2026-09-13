@@ -11,6 +11,12 @@ on:
 permissions:
   contents: write
 
+# Share the same writer lock as static article generation. This prevents
+# both workflows from committing to main at the same time.
+concurrency:
+  group: jaziel-main-writers
+  cancel-in-progress: false
+
 jobs:
   sitemap:
     runs-on: ubuntu-latest
@@ -68,5 +74,5 @@ jobs:
             echo "Sitemap is already current."
           else
             git commit -m "Update Jaziel sitemap"
-            git push
+            git push origin HEAD:main
           fi
