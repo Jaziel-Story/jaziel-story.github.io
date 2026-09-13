@@ -1,0 +1,72 @@
+name: Generate Jaziel sitemap
+
+on:
+  push:
+    paths:
+      - "articles.json"
+      - ".github/workflows/generate-sitemap.yml"
+      - "sitemap.xml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sitemap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate sitemap.xml
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const site = 'https://jaziel-story.github.io/';
+          const esc = value => String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
+
+          const data = JSON.parse(fs.readFileSync('articles.json', 'utf8'));
+          const urls = [
+            { loc: site },
+            { loc: `${site}about.html` },
+            { loc: `${site}contact.html` },
+            { loc: `${site}privacy.html` },
+            { loc: `${site}terms.html` }
+          ];
+
+          for (const article of (data.articles || [])) {
+            if (!article || !article.slug) continue;
+            const entry = { loc: `${site}articles/${article.slug}.html` };
+            if (/^\\d{4}-\\d{2}-\\d{2}$/.test(String(article.date || ''))) {
+              entry.lastmod = article.date;
+            }
+            urls.push(entry);
+          }
+
+          const body = urls.map(url => [
+            '  <url>',
+            `    <loc>${esc(url.loc)}</loc>`,
+            url.lastmod ? `    <lastmod>${esc(url.lastmod)}</lastmod>` : '',
+            '  </url>'
+          ].filter(Boolean).join('\\n')).join('\\n');
+
+          const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\\n${body}\\n</urlset>\\n`;
+          fs.writeFileSync('sitemap.xml', sitemap);
+          NODE
+
+      - name: Commit sitemap
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sitemap.xml
+          if git diff --cached --quiet; then
+            echo "Sitemap is already current."
+          else
+            git commit -m "Update Jaziel sitemap"
+            git push
+          fi
