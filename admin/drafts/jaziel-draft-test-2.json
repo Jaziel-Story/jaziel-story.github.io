@@ -1,0 +1,62 @@
+{
+  "draftVersion": 1,
+  "draftStatus": "draft",
+  "draftMeta": {
+    "slug": "jaziel-draft-test-2",
+    "createdAt": "2026-09-13T13:35:09.144Z",
+    "updatedAt": "2026-09-13T13:35:09.144Z",
+    "createdBy": "Admin Panel",
+    "updatedBy": "Admin Panel"
+  },
+  "article": {
+    "id": "",
+    "title": "Jaziel Draft Test 2",
+    "slug": "jaziel-draft-test-2",
+    "description": "",
+    "category": "",
+    "date": "2026-09-13",
+    "readTime": "",
+    "dek": "",
+    "cover": "",
+    "intro": "",
+    "sections": [
+      {
+        "heading": "",
+        "paragraphs": []
+      }
+    ],
+    "images": [],
+    "bibleVerse": {
+      "text": "",
+      "reference": ""
+    },
+    "closing": "",
+    "seo": {
+      "title": "",
+      "description": ""
+    },
+    "og": {
+      "title": "",
+      "description": "",
+      "image": ""
+    },
+    "tags": [],
+    "relatedArticles": [],
+    "featured": false
+  },
+  "imageRecommendations": {
+    "cover": {
+      "description": "Recommended editorial cover image matching the article topic.",
+      "prompt": "Professional editorial cover image for: Jaziel Draft Test 2. Realistic, cinematic journalism photography, no text, no watermark, 16:9.",
+      "aspectRatio": "16:9"
+    },
+    "sections": [
+      {
+        "section": 1,
+        "description": "Supporting editorial image for section 1: Jaziel Draft Test 2.",
+        "prompt": "Realistic editorial photography illustrating: Jaziel Draft Test 2. Professional news website style, no text, no watermark, 16:9.",
+        "aspectRatio": "16:9"
+      }
+    ]
+  }
+}
