@@ -12,6 +12,12 @@ on:
 permissions:
   contents: write
 
+# Serialize repository-writing workflows so sitemap/article generation cannot
+# race each other when both are triggered by the same articles.json change.
+concurrency:
+  group: jaziel-main-writers
+  cancel-in-progress: false
+
 jobs:
   generate:
     runs-on: ubuntu-latest
@@ -80,4 +86,29 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add articles
-          if git diff --cached --quiet; then echo "Nothing to commit."; else git commit -m "Generate static Jaziel articles"; git push; fi
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+            exit 0
+          fi
+          git commit -m "Generate static Jaziel articles"
+
+          # The checkout can become stale while another legitimate writer
+          # updates main. Rebase onto the latest main before pushing.
+          for attempt in 1 2 3; do
+            echo "Push attempt ${attempt}/3"
+            git fetch origin main
+            if ! git rebase origin/main; then
+              echo "Rebase failed; aborting rebase so the workflow fails safely."
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              echo "Push succeeded."
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              sleep $((attempt * 3))
+            fi
+          done
+          echo "Unable to push after 3 attempts."
+          exit 1
