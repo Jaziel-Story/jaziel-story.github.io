@@ -72,7 +72,28 @@ jobs:
           git add sitemap.xml
           if git diff --cached --quiet; then
             echo "Sitemap is already current."
-          else
-            git commit -m "Update Jaziel sitemap"
-            git push origin HEAD:main
+            exit 0
           fi
+          git commit -m "Update Jaziel sitemap"
+
+          # The queued workflow may have been created from an older commit.
+          # Rebase onto the latest main before pushing so the writer stays safe
+          # even when another workflow has already advanced the branch.
+          for attempt in 1 2 3; do
+            echo "Push attempt ${attempt}/3"
+            git fetch origin main
+            if ! git rebase origin/main; then
+              echo "Rebase failed; aborting rebase so the workflow fails safely."
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              echo "Push succeeded."
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              sleep $((attempt * 3))
+            fi
+          done
+          echo "Unable to push after 3 attempts."
+          exit 1
