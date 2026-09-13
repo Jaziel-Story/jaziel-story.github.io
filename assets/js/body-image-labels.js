@@ -38,21 +38,25 @@
     return true;
   }
 
-  function scheduleApply() {
-    setTimeout(apply, 0);
-  }
+  function scheduleApply() { setTimeout(apply, 0); }
 
   function init() {
     styles();
     apply();
-    // renderBodyImages() rebuilds the list after Add Image/remove. Refresh
-    // after relevant UI events instead of observing the entire document.
     document.addEventListener("click", e => {
       if (e.target.closest?.("#btnAddImage, [data-remove-image]")) scheduleApply();
     }, true);
     document.addEventListener("change", e => {
       if (e.target.matches?.("[data-image-file]")) scheduleApply();
     }, true);
+
+    // Load the GitHub-backed Draft Manager after the Admin Panel shell exists.
+    if (!document.querySelector('script[data-jaziel-draft-manager]')) {
+      const script = document.createElement("script");
+      script.src = "../assets/js/draft-manager.js?v=20260913-1";
+      script.dataset.jazielDraftManager = "1";
+      document.head.appendChild(script);
+    }
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once:true });
