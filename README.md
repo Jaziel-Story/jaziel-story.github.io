@@ -22,6 +22,9 @@ assets/js/home-featured-minimal.js  Lightweight homepage presentation helper
 assets/js/home-latest-final.js      Single homepage data/render loader
 assets/images/articles/  Article images (cover + body), uploaded via the Admin Panel
 assets/images/og/         Website Open Graph cover image
+robots.txt             Crawler rules and sitemap declaration
+sitemap.xml            Canonical URL sitemap
+.github/workflows/generate-sitemap.yml  Automatic sitemap regeneration
 ```
 
 The homepage intentionally uses one dedicated data/render loader so
@@ -45,6 +48,17 @@ a maximum of **2 sections per page**. The first page is the default when no
 - Section images remain mapped sequentially: Section 1 → Image 1, Section 2 → Image 2, and so on.
 - Static generated article pages and the dynamic article view use the same pagination rule.
 - The article cover appears only on Page 1. Page 2 and later retain the article title but do not repeat the dek/read-time metadata.
+- Static article Page 1 and later `?page=N` URLs receive active-page canonical/OG URL signals at runtime.
+
+## SEO / indexability baseline
+
+- `robots.txt` allows normal crawling and declares `sitemap.xml`.
+- `sitemap.xml` contains the homepage, core informational pages, and canonical static article URLs.
+- `.github/workflows/generate-sitemap.yml` rebuilds the sitemap from `articles.json` whenever article data changes.
+- `index.html` has a self-referencing canonical URL and `WebSite` JSON-LD.
+- Static article pages retain canonical/description/OG metadata and now receive `Article` JSON-LD from the pagination helper without changing Article Schema v1.
+- Dynamic `article.html?slug=...` remains a legacy fallback; the sitemap points only to canonical static article URLs.
+- Search/category query pages are intentionally not listed in the sitemap.
 
 ## Admin Panel
 
@@ -98,6 +112,7 @@ update that single constant — no other file needs to change.
   Node.js on JavaScript changes.
 - `.github/workflows/ai-writer.yml` — runs on demand, triggered by the Admin
   Panel, to turn raw text into a structured article draft with Gemini.
+- `.github/workflows/generate-sitemap.yml` — regenerates the XML sitemap from the current article list.
 
 ## Repository Change Log
 
@@ -105,6 +120,28 @@ update that single constant — no other file needs to change.
 `CHANGELOG.md`. Before making another fix, check these logs and the recent Git
 commits first. Do not repeat a change that is already marked DONE unless a
 regression is confirmed.
+
+### 2026-09-13 — SEO/indexability foundation
+
+- **Priority:** P1 / remove technical discovery gaps found in the repository SEO audit.
+- **Files changed:** `robots.txt`, `sitemap.xml`, `.github/workflows/generate-sitemap.yml`, `index.html`, `assets/js/article-pagination.js`.
+- **Change:** Added a permissive robots.txt with the sitemap declaration; added the current canonical sitemap and automatic sitemap regeneration from `articles.json`; added a self-referencing homepage canonical and WebSite JSON-LD; added Article JSON-LD for static article pages; kept pagination behavior and Article Schema v1 unchanged.
+- **Canonical policy:** Static paginated article URLs use the active page URL as their canonical signal (`?page=N` for Page 2+). The legacy dynamic `article.html?slug=...` route is not included in the sitemap.
+- **Reason:** Repository audit found no robots.txt, no sitemap.xml, no homepage canonical, and no article structured data. These were identified as SEO/indexability improvements, not a `noindex` blocker.
+- **Google guidance:** Google recommends submitting a sitemap and supports Article structured data; for multi-part articles, Google documents using an individual-page canonical or a view-all canonical. The implementation keeps the static article pagination model and uses active-page canonical signals. citeturn6search4turn3search0
+- **Article Schema:** unchanged and locked.
+- **Verification:** Repository source was re-audited after each change. Sitemap generator escaping was corrected before finalizing. Final live indexing still requires Google Search Console URL Inspection and sitemap submission.
+- **Status:** IMPLEMENTED / NEEDS GITHUB ACTIONS + LIVE SEO VERIFICATION.
+
+### 2026-09-13 — Adsterra site-wide integration
+
+- **Priority:** P1 / add the approved Adsterra formats without changing Article Schema or pagination.
+- **Files:** ad integration helper and static article generation path from the uploaded fixed repository package.
+- **Change:** Added site-wide Popunder and Social Bar, responsive Banner handling for 300×250 desktop/tablet and 320×50 mobile, and Native Banner handling with duplicate-container protection.
+- **Important rule:** Popunder/Social Bar are loaded once per HTML document; Adult Ads and Smartlink were not enabled.
+- **Verification:** User confirmed GitHub Actions validation and Pages deployment succeeded. Homepage testing showed Social Bar and banner delivery; blank ad slots were treated as network no-fill rather than code failure.
+- **Commit:** `4175a362763009610e630b0552a52ce58bd5088d` (`4175a36`).
+- **Status:** DEPLOYED / LIVE TESTING CONTINUES.
 
 ### 2026-09-13 — Article pagination display refinement
 
@@ -135,7 +172,7 @@ regression is confirmed.
 
 - **Priority:** P2 / add the website Open Graph/social sharing cover.
 - **Files changed:** `assets/images/og/jaziel-og-cover.png`, `index.html`.
-- **Change:** Added the Jaziel OG cover image and website-level Open Graph/Twitter metadata pointing to it.
+- **Change:** Added the Jaziel OG cover image and website-level Open Graph/Twitter metadata pointing to the cover.
 - **Reason:** User requested a website OG cover.
 - **Commit:** `afcfa4ad5f7301fc319c6f0c722792268393cbb2` for the metadata update; image rename/addition was committed immediately before it in `99f919e87a390aeeb266942a9472f0102f9cc4c1`.
 - **Verification:** User confirmed the OG image appears successfully. Source metadata was also checked against the repository file path.
@@ -166,7 +203,7 @@ regression is confirmed.
 - **Schema:** Article Schema v1 was not changed.
 - **Files changed:** `.github/workflows/generate-static-articles.yml`, `assets/js/admin-section-labels.js`, `assets/js/ai-writer-category-fix.js`, `assets/js/image-manager.js`, `assets/js/admin-preview-order-fix.js`, `admin/index.html`.
 - **Commits:** `09cb3be8d3373c69ff70d84bac692f690d473ab0`, `4d111022dda3645763322d7970f47b07a785193e`, `75b5322707d2b6633497b24a56695c6807faf93e`, `e8d43ef9541105c131ade130b2027f4705d8b999`, `b6da7f8bf41f125300549f2d983a12248db1449f`, `b215a6488313b57637758587d40f242cf3a8b50a`, `8b80a7dccc7c59c10a86c363dfdfa27d6f2e4d60`.
-- **Verification:** The JavaScript workflow successfully passed on earlier hardening commits `e8d43ef...`, `b6da7f8...`, and `b215a648...`. The latest section-label refinement was additionally checked with `node --check`. Full fresh workflow and live Admin E2E verification remain pending.
+- **Verification:** JavaScript validation successfully passed on hardening commits `e8d43ef...`, `b6da7f8...`, and `b215a648...`. The latest section-label refinement `75b53227...` was also checked with `node --check`. Fresh full workflow and live Admin E2E testing remain pending.
 - **Deployment:** GitHub Pages/live verification pending.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
@@ -226,6 +263,7 @@ These are protected baseline fixes. If a future bug appears, **do not immediatel
 - Admin Preview has been checked by the user and confirmed safe.
 - Public Contact email is now set to the user-confirmed email address.
 - Website OG cover image was confirmed visible by the user.
+- SEO foundation files are now present in the repository.
 
 ### 🟡 Needs live verification
 
@@ -235,6 +273,8 @@ These are protected baseline fixes. If a future bug appears, **do not immediatel
 - GitHub Pages deployment of the latest contact email change.
 - Article pagination across 1-, 2-, 3-, 4-, 5-, and 6-section articles.
 - Latest Page-2 display refinement: title retained; dek/read-time metadata hidden after Page 1.
+- Google Search Console URL Inspection and sitemap processing.
+- Rich Results Test / rendered JSON-LD validation for article pages.
 
 ### 🟠 AI Writer privacy / E2E review pending
 
