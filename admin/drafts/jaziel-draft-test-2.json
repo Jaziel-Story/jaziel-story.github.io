@@ -4,7 +4,7 @@
   "draftMeta": {
     "slug": "jaziel-draft-test-2",
     "createdAt": "2026-09-13T13:35:09.144Z",
-    "updatedAt": "2026-09-13T13:35:09.144Z",
+    "updatedAt": "2026-09-13T16:36:51.559Z",
     "createdBy": "Admin Panel",
     "updatedBy": "Admin Panel"
   },
@@ -21,8 +21,22 @@
     "intro": "",
     "sections": [
       {
-        "heading": "",
-        "paragraphs": []
+        "heading": "First Test Section",
+        "paragraphs": [
+          "This is the first section of the Jaziel Draft Manager test."
+        ]
+      },
+      {
+        "heading": "Second Test Section",
+        "paragraphs": [
+          "This is the second section of the Jaziel Draft Manager test."
+        ]
+      },
+      {
+        "heading": "Third Test Section",
+        "paragraphs": [
+          "This is the third section of the Jaziel Draft Manager test."
+        ]
       }
     ],
     "images": [],
@@ -30,7 +44,7 @@
       "text": "",
       "reference": ""
     },
-    "closing": "",
+    "closing": "This test confirms that the Jaziel Draft Manager can save and restore article content before publication.",
     "seo": {
       "title": "",
       "description": ""
@@ -53,8 +67,20 @@
     "sections": [
       {
         "section": 1,
-        "description": "Supporting editorial image for section 1: Jaziel Draft Test 2.",
-        "prompt": "Realistic editorial photography illustrating: Jaziel Draft Test 2. Professional news website style, no text, no watermark, 16:9.",
+        "description": "Supporting editorial image for section 1: First Test Section.",
+        "prompt": "Realistic editorial photography illustrating: First Test Section. Professional news website style, no text, no watermark, 16:9.",
+        "aspectRatio": "16:9"
+      },
+      {
+        "section": 2,
+        "description": "Supporting editorial image for section 2: Second Test Section.",
+        "prompt": "Realistic editorial photography illustrating: Second Test Section. Professional news website style, no text, no watermark, 16:9.",
+        "aspectRatio": "16:9"
+      },
+      {
+        "section": 3,
+        "description": "Supporting editorial image for section 3: Third Test Section.",
+        "prompt": "Realistic editorial photography illustrating: Third Test Section. Professional news website style, no text, no watermark, 16:9.",
         "aspectRatio": "16:9"
       }
     ]
