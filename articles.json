@@ -146,68 +146,6 @@
       ],
       "relatedArticles": [],
       "featured": false
-    },
-    {
-      "id": "story-003",
-      "title": "Jaziel Image Upload Test",
-      "slug": "jaziel-image-upload-test",
-      "description": "A simple test article to verify image uploads and section ordering in the Jaziel Admin Panel.",
-      "category": "Technology",
-      "date": "2026-09-13",
-      "readTime": "",
-      "dek": "Testing the Jaziel image upload and article publishing system.",
-      "cover": "assets/images/articles/jaziel-image-upload-test-cover.jpg",
-      "intro": "This test article is created to verify that cover images and body images are correctly uploaded, stored, and displayed in the right order.",
-      "sections": [
-        {
-          "heading": "First Test Section",
-          "paragraphs": [
-            "This is the first test section. The image below should belong only to Section 1."
-          ]
-        },
-        {
-          "heading": "Second Test Section",
-          "paragraphs": [
-            "This is the second test section. The image below should belong only to Section 2."
-          ]
-        },
-        {
-          "heading": "Third Test Section",
-          "paragraphs": [
-            "This is the third test section. The image below should belong only to Section 3."
-          ]
-        }
-      ],
-      "images": [
-        {
-          "src": "assets/images/articles/jaziel-image-upload-test-1.webp",
-          "alt": "Test image A",
-          "caption": "Caption for test image A"
-        },
-        {
-          "src": "assets/images/articles/jaziel-image-upload-test-2.webp",
-          "alt": "Test image B",
-          "caption": "Caption for test image B"
-        },
-        {
-          "src": "assets/images/articles/jaziel-image-upload-test-3.webp",
-          "alt": "Test image C",
-          "caption": "Caption for test image C"
-        }
-      ],
-      "closing": "Thank you for reading this Jaziel test article. This test helps us verify that every image, caption, and section is published correctly.",
-      "seo": {
-        "title": "Jaziel Image Upload Test | Jaziel",
-        "description": "A simple test article to verify image uploads and section ordering in the Jaziel Admin Panel."
-      },
-      "og": {
-        "title": "Jaziel Image Upload Test",
-        "description": "A simple test article to verify image uploads and section ordering in the Jaziel Admin Panel.",
-        "image": "assets/images/articles/jaziel-image-upload-test-cover.jpg"
-      },
-      "tags": [],
-      "relatedArticles": [],
-      "featured": false
     }
   ]
 }
