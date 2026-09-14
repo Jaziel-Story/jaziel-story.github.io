@@ -7,6 +7,7 @@
   const REPO = "Jaziel-Story/jaziel-story.github.io";
   const BRANCH = "main";
   const DRAFT_DIR = "admin/drafts";
+  const IMAGE_DIR = "assets/images/articles";
   const SETTINGS_KEY = "jaziel_admin_settings_v1";
   const TOKEN_KEY = "jaziel_admin_token_v1";
   const loaded = { sha: null, slug: null, draft: null };
@@ -19,7 +20,12 @@
   function toast(message, type = "info") { const root = $("#toastRoot"); if (root) { const el = document.createElement("div"); el.className = `toast${type === "error" ? " toast-error" : type === "success" ? " toast-success" : ""}`; el.textContent = message; root.appendChild(el); setTimeout(() => el.remove(), 5000); } }
   function utf8b64(s) { const b = new TextEncoder().encode(s); let x = ""; for (let i = 0; i < b.length; i += 0x8000) x += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(x); }
   function b64utf8(s) { const x = atob(String(s || "").replace(/\n/g, "")); const b = Uint8Array.from(x, c => c.charCodeAt(0)); return new TextDecoder().decode(b); }
+  function fileToB64(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => { const result = String(reader.result || ""); const comma = result.indexOf(","); resolve(comma >= 0 ? result.slice(comma + 1) : result); }; reader.onerror = () => reject(new Error("Could not read image file.")); reader.readAsDataURL(file); }); }
+  function imageExt(file) { const type = String(file?.type || "").toLowerCase(); if (type === "image/png") return "png"; if (type === "image/webp") return "webp"; if (type === "image/gif") return "gif"; return "jpg"; }
+  function imagePath(s, kind, index, file) { const suffix = kind === "cover" ? "cover" : `body-${Number(index) + 1}`; return `${IMAGE_DIR}/${s}-${suffix}.${imageExt(file)}`; }
   async function request(path, options = {}) { const r = await fetch(api(path), { ...options, headers: headers(Boolean(options.body)) }); if (!r.ok) { let msg = r.statusText; try { const j = await r.json(); msg = j.message || msg; } catch {} const e = new Error(`GitHub ${r.status}: ${msg}`); e.status = r.status; throw e; } return r.status === 204 ? null : r.json(); }
+  async function getContentFile(path) { try { return await request(`/contents/${path}?ref=${encodeURIComponent(BRANCH)}&t=${Date.now()}`); } catch (e) { if (e.status === 404) return null; throw e; } }
+  async function uploadImage(path, file, label) { const b64 = await fileToB64(file); const existing = await getContentFile(path); const body = { message: `Upload ${label}: ${path.split("/").pop()}`, content: b64, branch: BRANCH }; if (existing?.sha) body.sha = existing.sha; await request(`/contents/${path}`, { method: "PUT", body: JSON.stringify(body) }); return path; }
   function slug() { return String($("#inSlug")?.value || "").trim(); }
   function requireSlug() { const s = slug(); if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(s)) throw new Error("A valid lowercase article slug is required before saving a draft."); return s; }
   function collectArticle() {
@@ -35,7 +41,36 @@
   async function getDraft(s) { try { const d = await request(`/contents/${DRAFT_DIR}/${encodeURIComponent(s)}.json?ref=${encodeURIComponent(BRANCH)}&t=${Date.now()}`); return { sha: d.sha, draft: validateDraft(JSON.parse(b64utf8(d.content))) }; } catch (e) { if (e.status === 404) return null; throw e; } }
   async function listDrafts() { try { const items = await request(`/contents/${DRAFT_DIR}?ref=${encodeURIComponent(BRANCH)}&t=${Date.now()}`); return Array.isArray(items) ? items.filter(x => x.type === "file" && x.name.endsWith(".json")).map(x => x.name.slice(0, -5)) : []; } catch (e) { if (e.status === 404) return []; throw e; } }
   async function checkDuplicate(s) { const existingDraft = await getDraft(s); if (existingDraft && (!loaded.draft || loaded.slug !== s)) throw new Error(`A GitHub draft already exists for slug “${s}”. Load it before updating it.`); const articles = await request(`/contents/articles.json?ref=${encodeURIComponent(BRANCH)}&t=${Date.now()}`); const parsed = JSON.parse(b64utf8(articles.content)); if ((parsed.articles || []).some(a => a.slug === s)) throw new Error(`This slug is already published: ${s}`); }
-  async function saveDraft() { const s = requireSlug(); if (!token()) throw new Error("A GitHub token with Contents write access is required to save drafts."); const article = collectArticle(); await checkDuplicate(s); const existing = await getDraft(s); const draft = makeDraft(article); const body = { message: `${existing ? "Update" : "Create"} draft: ${s}`, content: utf8b64(JSON.stringify(draft, null, 2) + "\n"), branch: BRANCH }; if (existing) body.sha = existing.sha; const result = await request(`/contents/${DRAFT_DIR}/${encodeURIComponent(s)}.json`, { method: "PUT", body: JSON.stringify(body) }); loaded.sha = result.content?.sha || null; loaded.slug = s; loaded.draft = draft; toast("Draft saved to GitHub.", "success"); }
+  async function uploadSelectedImages(s, article) {
+    const coverInput = $("#coverFile");
+    const coverFile = coverInput?.files?.[0] || null;
+    if (coverFile) { const path = imagePath(s, "cover", 0, coverFile); await uploadImage(path, coverFile, "cover image"); article.cover = path; }
+    const bodyItems = $$("#bodyImagesList .repeat-item");
+    for (let i = 0; i < bodyItems.length; i++) {
+      const file = bodyItems[i].querySelector('[data-image-file]')?.files?.[0] || null;
+      if (!file) continue;
+      const path = imagePath(s, "body", i, file);
+      await uploadImage(path, file, `body image ${i + 1}`);
+      if (!article.images[i]) article.images[i] = { src: "", alt: "", caption: "" };
+      article.images[i].src = path;
+    }
+  }
+  async function saveDraft() {
+    const s = requireSlug();
+    if (!token()) throw new Error("A GitHub token with Contents write access is required to save drafts.");
+    const article = collectArticle();
+    await checkDuplicate(s);
+    await uploadSelectedImages(s, article);
+    const existing = await getDraft(s);
+    const draft = makeDraft(article);
+    const body = { message: `${existing ? "Update" : "Create"} draft: ${s}`, content: utf8b64(JSON.stringify(draft, null, 2) + "\n"), branch: BRANCH };
+    if (existing) body.sha = existing.sha;
+    const result = await request(`/contents/${DRAFT_DIR}/${encodeURIComponent(s)}.json`, { method: "PUT", body: JSON.stringify(body) });
+    loaded.sha = result.content?.sha || null; loaded.slug = s; loaded.draft = draft;
+    setValue("#inCoverUrl", article.cover);
+    article.images.forEach((img, i) => setValue(`#bodyImagesList [data-image-url=\"${i}\"]`, img.src || ""));
+    toast("Draft and selected images saved to GitHub.", "success");
+  }
   function setValue(selector, value) { const el = $(selector); if (!el) return; el.value = value ?? ""; el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); }
   function setSimpleFields(a) { setValue("#inTitle", a.title); setValue("#inSlug", a.slug); setValue("#inCategory", a.category); setValue("#inDate", a.date); setValue("#inReadTime", a.readTime); setValue("#inDescription", a.description); setValue("#inDek", a.dek); setValue("#inIntro", a.intro); setValue("#inClosing", a.closing); setValue("#inVerseText", a.bibleVerse?.text); setValue("#inVerseRef", a.bibleVerse?.reference); setValue("#inCoverUrl", a.cover); setValue("#inSeoTitle", a.seo?.title); setValue("#inSeoDesc", a.seo?.description); setValue("#inOgTitle", a.og?.title); setValue("#inOgDesc", a.og?.description); setValue("#inOgImage", a.og?.image); const f = $("#inFeatured"); if (f) { f.checked = Boolean(a.featured); f.dispatchEvent(new Event("change", { bubbles: true })); } }
   async function ensureCount(selector, button, count) { for (let i = $$(selector).length; i < count; i++) { $(button)?.click(); await new Promise(r => setTimeout(r, 0)); } }
