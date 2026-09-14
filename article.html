@@ -33,5 +33,26 @@
     <div class="ad-slot" aria-label="Advertisement"></div>
   </div></main>
   <footer class="site-footer"><div class="container footer-inner"><div><div class="footer-logo">JAZIEL</div><div>Trending stories, viral moments and news from around the world.</div></div><div class="footer-links"><a href="about.html">About</a><a href="contact.html">Contact</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></div><div>© 2026 Jaziel. All rights reserved.</div></div></footer>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const author = "Jaziel Story";
+      let attempts = 0;
+      const maxAttempts = 20;
+
+      const applyAuthor = () => {
+        document.querySelectorAll(".story-meta").forEach(meta => {
+          if (meta.dataset.jazielAuthorApplied === "true") return;
+          const existing = meta.textContent.trim();
+          meta.textContent = existing ? `By ${author} · ${existing}` : `By ${author}`;
+          meta.dataset.jazielAuthorApplied = "true";
+        });
+
+        attempts += 1;
+        if (attempts < maxAttempts) window.setTimeout(applyAuthor, 100);
+      };
+
+      applyAuthor();
+    });
+  </script>
 </body>
 </html>
