@@ -134,6 +134,16 @@ update that single constant — no other file needs to change.
 commits first. Do not repeat a change that is already marked DONE unless a
 regression is confirmed.
 
+### 2026-09-15 — Documentation reconciliation for previously undocumented Admin draft/image changes
+
+- **Priority:** P2 / reconcile the repository documentation gap found before continuing the Admin draft/image work.
+- **Files changed:** `admin/drafts/lizzie-velasquez-cyberbullying-courage-story.json`, `assets/js/draft-manager.js`, `admin/index.html`, `assets/js/draft-images-section-sync.js` (the last file was created but is not currently loaded by the Admin).
+- **Change:** Recorded the previously undocumented Lizzie draft update (`7ec68999af3dde0f99de2549f51c47858b3fa050`), GitHub draft image persistence fix (`5d2b6386d0937ae7272049cf881f083a5461b446`), cache-bust (`f338e8c9c164712879aa740933f4599585cd713e`), and body-image section-sync helper creation (`ff1085135f2e4a92d5ddf9085094fdb4e735458f`). The helper is explicitly recorded as **not active** because `admin/index.html` does not load it.
+- **Reason:** Every repository change must have an auditable record before new fixes are made. This closes the documentation gap without changing Article Schema v1, pagination, generator, sitemap, or Adsterra.
+- **Verification:** README and CHANGELOG were reconciled against the recent Git history and the current repository files. The helper's `node --check` result and its inactive runtime state are explicitly documented.
+- **Documentation commit:** This README update is committed together with the corresponding CHANGELOG reconciliation.
+- **Status:** DOCUMENTATION RECONCILED / READY FOR NEXT FIX.
+
 ### 2026-09-13 — Workflow push hardening
 
 - **Priority:** P1 / prevent the real `main` push race that caused a published Admin article to exist in `articles.json` while its generated static HTML remained only inside a failed workflow runner.
@@ -227,46 +237,129 @@ These are protected baseline fixes. If a future bug appears, do not immediately 
 ### 2026-09-12 — Admin Preview image order fix
 
 - **Priority:** P1 / body images must appear after their matching section.
-- **Fix:** Added `assets/js/admin-preview-order-fix.js`; later hardened with bounded animation-frame retries.
+- **Fix:** Added `assets/js/admin-preview-order-fix.js`, later hardened with bounded animation-frame retries.
 - **Commits:** `8e8c3af2288eac967a47452fd5ae6f5e96c017f0`, `d134c30290e30a3fa285b54899812145f659c47a`, later `b215a6488313b57637758587d40f242cf3a8b50a`.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
 ### 2026-09-12 — Admin Preview stability + Body Image relative-path fix
 
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
 - **Fix:** Removed the persistent Preview mapping observer approach and updated `body-image-preview.js` to resolve relative repository paths.
 - **Commits:** `3bc626b6f7521f1bf96512f5585dd28cc4b1836d`, `9bac5ef22f98f850c97079df431ea0c63be4da90`, `56e7a982294e438464c4f0a91a26a147fc228753`.
-- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
+
+### 2026-09-12 — Admin Preview section/image mapping — superseded
+
+- **Status:** SUPERSEDED / REVERTED
+- **Original commits:** `1dffe6892795eae230f4cb390a3e5d584d1d379f`, `89428821e921f3ddea6d8c90e70843f38b5dbc25`.
+- **Original approach:** Persistent DOM observer to move body images after matching headings.
+- **Why superseded:** Observer-based DOM repair was unstable and unnecessary as a permanent mechanism.
+- **Replacement:** `admin-preview-order-fix.js` uses bounded animation-frame repair tied to Preview.
 
 ### 2026-09-12 — Homepage performance consolidation
 
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
 - **Priority:** P1 / user-reported homepage performance problem.
 - **Fix:** Homepage now uses one dedicated data/render path; obsolete loaders and observers were removed.
 - **Commits:** `aa690bb0658960d0d3b0871e2e7452b73db3f10b`, `184a89b922fb860079dcd80efadfd87bbc97122b`, `f58ab89ccda1b0183ef636b76b4da46ed0de67cd`, `83bb01c1d20d82de509a4467d2906675fe8a7580`.
-- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
-## Current Audit Status
+### Live verification — Admin Panel recovered
 
-### 🟢 Verified / do not repeat
+- **Status:** VERIFIED LIVE
+- **Evidence:** User screenshot showed the deployed Admin Dashboard rendering successfully.
 
-- Admin Panel loads successfully on the live site.
-- Article Schema v1 is locked and unchanged.
-- Website OG cover image was confirmed visible by the user.
-- SEO foundation files are present in the repository.
-- Static generator successfully regenerated the Admin test article after workflow push hardening.
+### Cleanup — one-time admin repair workflow
 
-### 🟡 Needs live verification
+- **Status:** DONE / REMOVED
+- **File:** `.github/workflows/one-time-admin-source-repair.yml`
+- **Removal commit:** `93c8332bd088464677d7f10eb9bf12a54c1ae3b6`.
 
-- Final GitHub Pages deployment after the latest workflow/documentation commits.
-- Article pagination across 1-, 2-, 3-, 4-, 5-, and 6-section articles.
-- Latest Page-2 display refinement.
-- Google Search Console sitemap processing and URL Inspection for new articles.
-- Rich Results Test / rendered JSON-LD validation for article pages.
-- Full Admin Edit Article and Draft end-to-end testing.
+### Most Popular metadata
 
-### 🟠 AI Writer privacy / E2E review pending
+- **Status:** DONE
+- **File:** `assets/css/popular-fix.css`
+- **Commits:** `04628df976399e4435b6cdff4880dcf0669e42ee`, `85dcca3367804cac57ab6fff58eaceae05db5f94`.
 
-- AI request/result JSON remains repository-backed. In a public repository, those contents can be publicly readable. Moving this transport would be a separate architecture decision.
-- A fresh end-to-end AI Writer test is still required.
+### Related Stories static image path
+
+- **Status:** DONE / VERIFY IN DEPLOYMENT
+- **File:** `assets/js/related-articles.js`
+- **Commit:** `0516ea890c61b43041925bb980a94c2aaeab1f3f`.
+
+### JavaScript syntax validation safeguard
+
+- **Status:** ADDED / MUST PASS
+- **File:** `.github/workflows/validate-javascript.yml`
+- **Commit:** `ab238b9e1bd09bb8c772dd8c52833b12e9194117`.
+
+### Admin source recovery history
+
+- **Status:** SUPERSEDED HISTORY / FINAL SOURCE WORKING LIVE
+- **File:** `admin/admin.js`
+- The incomplete manual replacement `517e3d61f5b4fcb4b000478d12e087bfe053ffa5` is invalid and must never be reused.
+- The final clean source was restored from the known-good `8c7abfa494d8b8de6de35c576472fb4c896ce473` basis, with final repository commit `5e625f2c4474543b350b14aa3be44b7d616ba2f3`.
+- A later targeted repair fixed the missing closing `}` in the `[data-image-url]` listener in `renderBodyImages()`.
+- Do not perform another broad rewrite of `admin/admin.js` unless a new regression is reproduced.
+
+### Admin deployment cache bust
+
+- **Status:** DONE / VERIFIED LIVE
+- **File:** `admin/index.html`
+- **Commit:** `2822ba6a33336f0dea59c206fb5a7e147f98f8c5`.
+
+### Cleanup — obsolete runtime loader
+
+- **Status:** DONE
+- **File:** `admin/admin-loader-fix.js`
+- **Commit:** `26c58117d3900eca3bee8ee6a744925b4ac105ce`.
+
+### AI Writer P1 — request checkout race fix
+
+- **Status:** IMPLEMENTED / NEEDS END-TO-END VERIFICATION
+- **File:** `.github/workflows/ai-writer.yml`
+- **Commit:** `4c1f0d561c39b7c82001e6e7584e1ca1749e1a66`.
+- **Verification:** Fresh end-to-end AI Writer execution is still required.
+
+### Body Image Add freeze — visual helper loop fix
+
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Files:** `assets/js/body-image-preview.js`, `assets/js/body-image-labels.js`
+- **Commits:** `2f50a8ccabaef69054490f883be18e51b6c148da`, `b33c07f5dfbd958b910281e264e40e6b1ddcf41d`.
+- **Result:** Document-wide observers and repeating interval loops were removed; relevant UI events now refresh the helpers.
+
+## Documentation rule
+Every repository change must be recorded in this file and summarized in `README.md`. The record must include:
+1. Date
+2. Priority/reason
+3. Exact files changed
+4. What changed
+5. Why it changed
+6. Commit SHA
+7. Verification result
+8. Deployment result when applicable
+9. Whether the change is DONE, NEEDS VERIFICATION, or REVERTED
+
+## Known remaining audit items
+
+### 🟢 Workflow generator
+- **Status:** HARDENED / NEEDS FINAL LIVE PIPELINE VERIFICATION
+- **Result:** The previous non-fast-forward race is addressed with shared concurrency, rebase, and retry handling.
+
+### 🟡 Article pagination
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Rule:** Maximum 2 sections per page; 1–2 sections stay on one page; longer articles use `?page=N` with numbered navigation and Continue Reading.
+- **Pending:** Live verification of 1–2, 3–4, 5–6, and longer section counts, including section/image order and mobile layout.
+
+### 🟡 AI request/result JSON privacy
+- **Status:** ARCHITECTURE REVIEW REQUIRED / NOT CHANGED
+- **Reason:** AI request/result JSON files are repository-backed in the current static workflow. In a public repository, their contents can be publicly readable. Moving this transport would be a separate architecture change.
+
+### 🟡 Search/category code duplication
+- **Status:** NEEDS FURTHER AUDIT
+- **Reason:** Search/category behavior appears across multiple JavaScript files. Refactor only after mapping all event listeners and responsibilities.
+
+### 🟡 Draft / Edit Article E2E
+- **Status:** NEXT FOCUSED TEST
+- **Goal:** Confirm how Admin drafts are stored, restored, edited, and whether a draft can be prepared from ChatGPT in a way that remains available when the user later opens the Admin Panel and only needs to add the recommended images.
 
 ## Change-control rule
 
