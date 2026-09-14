@@ -12,6 +12,48 @@ This file is the project memory for repository changes. Read it before making a 
 - Record every repository change here with its purpose, files, commit, verification, and status.
 - If a previous fix is later reverted or superseded, record that explicitly instead of treating the old fix as still active.
 
+## 2026-09-15 — Documentation reconciliation for previously undocumented Admin draft/image changes
+
+### Draft content update — Lizzie Velásquez article
+- **Status:** DONE / DRAFT DATA UPDATED
+- **Priority:** P2 / keep the six-section Lizzie draft content and its six image recommendations aligned with the current Article Schema v1 draft contract.
+- **Files:** `admin/drafts/lizzie-velasquez-cyberbullying-courage-story.json`.
+- **Change:** Updated the Lizzie draft content, including the six article sections and six `imageRecommendations.sections` entries. The draft remained repository-backed under `admin/drafts/`.
+- **Reason:** Prepare the draft for the Admin image workflow while keeping Article Schema v1 unchanged.
+- **Commit:** `7ec68999af3dde0f99de2549f51c47858b3fa050` (`Update draft: lizzie-velasquez-cyberbullying-courage-story`).
+- **Verification:** Repository draft was inspected and confirmed to contain 6 sections and 6 image recommendations. `article.images` at that point still contained 4 image objects.
+- **Deployment:** Repository change committed to `main`.
+
+### GitHub draft image persistence fix
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P1 / selected cover and body images must persist in GitHub instead of remaining only in browser-local state.
+- **Files:** `assets/js/draft-manager.js`.
+- **Change:** Added GitHub image upload handling for selected cover/body image files under `assets/images/articles/`, updated the draft's `cover` and body image `src` paths to repository paths, and saved the resulting Draft JSON under `admin/drafts/<slug>.json`.
+- **Reason:** Draft image persistence needed to survive browser/device changes and use the repository as the source of truth.
+- **Commit:** `5d2b6386d0937ae7272049cf881f083a5461b446` (`Fix GitHub draft image persistence`).
+- **Verification:** Local JavaScript syntax check passed for the constructed `draft-manager.js` source before applying the change. The implementation was then cache-busted for deployment.
+- **Deployment:** Repository commit reached `main`; live Admin end-to-end image upload verification remained pending.
+
+### Draft image persistence cache-bust
+- **Status:** DONE / CACHE UPDATED
+- **Priority:** P2 / ensure deployed Admin browsers load the updated GitHub-backed draft image persistence logic.
+- **Files:** `admin/index.html`.
+- **Change:** Changed the `draft-manager.js` script version from `v=20260915-1` to `v=20260915-2`.
+- **Reason:** Prevent stale browser caching from hiding the previous draft-manager fix.
+- **Commit:** `f338e8c9c164712879aa740933f4599585cd713e` (`Cache-bust GitHub draft image persistence fix`).
+- **Verification:** Commit diff confirmed the script version changed exactly from `20260915-1` to `20260915-2`.
+- **Deployment:** Repository commit reached `main`.
+
+### Body image section-sync helper created — not active
+- **Status:** CREATED / NOT ACTIVE / NEEDS INTEGRATION VERIFICATION
+- **Priority:** P1 / keep the Admin Images tab aligned with the number of article sections.
+- **Files:** `assets/js/draft-images-section-sync.js`.
+- **Change:** Added a bounded helper that detects article section headings, adds missing body-image slots up to the section count, and supplies default alt/caption values without changing Article Schema v1 or image storage rules.
+- **Reason:** The Lizzie draft has 6 sections but only 4 `article.images` entries, so Body Image 5 and 6 were missing from the Admin Images tab.
+- **Commit:** `ff1085135f2e4a92d5ddf9085094fdb4e735458f` (`Sync body image slots with article sections`).
+- **Verification:** `node --check` passed for the helper. Repository inspection subsequently confirmed that `admin/index.html` does **not** load this helper, so it is not active in the deployed Admin and must not be described as a completed fix.
+- **Deployment:** Helper file exists on `main`, but runtime activation is still pending.
+
 ## 2026-09-13
 
 ### Workflow push hardening
