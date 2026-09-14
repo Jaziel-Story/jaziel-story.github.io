@@ -12,6 +12,27 @@ This file is the project memory for repository changes. Read it before making a 
 - Record every repository change here with its purpose, files, commit, verification, and status.
 - If a previous fix is later reverted or superseded, record that explicitly instead of treating the old fix as still active.
 
+## 2026-09-15 — Jaziel Story author/byline display
+
+### Homepage byline
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P2 / establish a consistent editorial byline on homepage story cards without changing Article Schema v1.
+- **Files:** `index.html`.
+- **Change:** Added `By Jaziel Story` to the homepage featured story, latest story cards, and Most Popular cards.
+- **Reason:** User selected **Jaziel Story** as the public editorial author name.
+- **Verification:** Repository source inspection confirmed the byline is present in all current homepage story metadata blocks.
+- **Deployment:** Committed to `main` in `daec9dea81ff6817a8380c35a363bb0e2544c7f6`, then completed the Most Popular coverage in `83b65bfc4cb70cb603fd053927cb35eecd1811cf`.
+
+### Article-page byline
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P2 / show the selected editorial byline on article pages and related story cards.
+- **Files:** `article.html`.
+- **Change:** Added a bounded, presentation-only DOM refresh that prepends `By Jaziel Story` to article metadata and related-story card metadata after the dynamic article content is rendered.
+- **Reason:** Keep article presentation consistent with the homepage while avoiding any Article Schema v1 change.
+- **Article Schema:** unchanged and locked; no `author` field was added to `articles.json`.
+- **Verification:** Source inspection confirmed the script is bounded to 20 attempts at 100 ms intervals and marks processed metadata nodes to prevent duplication.
+- **Deployment:** Committed to `main` in `996b898eb7f8edfdb26b258bd2ce4c8a14cfc734`.
+
 ## 2026-09-15 — Documentation reconciliation for previously undocumented Admin draft/image changes
 
 ### Draft content update — Lizzie Velásquez article
@@ -131,6 +152,7 @@ This file is the project memory for repository changes. Read it before making a 
 - **Files:** `.github/workflows/generate-static-articles.yml`, `assets/js/admin-section-labels.js`, `assets/js/ai-writer-category-fix.js`, `assets/js/image-manager.js`, `assets/js/admin-preview-order-fix.js`, `admin/index.html`.
 - **Commits:** `09cb3be8d3373c69ff70d84bac692f690d473ab0`, `4d111022dda3645763322d7970f47b07a785193e`, `75b5322707d2b6633497b24a56695c6807faf93e`, `e8d43ef9541105c131ade130b2027f4705d8b999`, `b6da7f8bf41f125300549f2d983a12248db1449f`, `b215a6488313b57637758587d40f242cf3a8b50a`, `8b80a7dccc7c59c10a86c363dfdfa27d6f2e4d60`.
 - **Verification:** JavaScript validation passed on the hardening commits and `node --check` passed for the section-label refinement.
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
 ### Protected-fix baseline
 - **Purpose:** prevent future debugging from accidentally undoing fixes that already solved known regressions.
@@ -262,4 +284,8 @@ For every future repository change:
 4. Do not touch Article Schema v1 unless explicitly approved.
 5. Verify syntax/build/workflow status before declaring success.
 6. Record the exact files, reason, commit SHA, verification, and deployment status in both this README and `CHANGELOG.md`.
-7. If a change is reverted or superseded, record that explicitly so it is never accidentally repeated.
+7. If a change is reverted or superseded, record that explicitly.
+
+## Monetization
+
+Adsterra ad slots (`.ad-slot` elements) are unchanged. The Admin Panel does not manage ad code.
