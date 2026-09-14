@@ -4,9 +4,9 @@
   "draftMeta": {
     "slug": "lizzie-velasquez-cyberbullying-courage-story",
     "createdAt": "2026-09-14T13:41:00+09:00",
-    "updatedAt": "2026-09-14T13:41:00+09:00",
+    "updatedAt": "2026-09-14T20:30:51.813Z",
     "createdBy": "ChatGPT",
-    "updatedBy": "ChatGPT"
+    "updatedBy": "Admin Panel"
   },
   "article": {
     "id": "",
@@ -82,26 +82,99 @@
       }
     ],
     "images": [
-      {"src":"","alt":"Lizzie Velásquez portrait related to her anti-bullying story","caption":"Lizzie Velásquez turned a painful experience with online bullying into a message of courage and kindness."},
-      {"src":"","alt":"Lizzie Velásquez speaking publicly about bullying and self-worth","caption":"Her public speaking helped turn her personal experience into an anti-bullying message."},
-      {"src":"","alt":"Lizzie Velásquez during a TEDx talk","caption":"Lizzie shared her story and challenged audiences to consider how they define themselves."},
-      {"src":"","alt":"Lizzie Velásquez advocating against bullying","caption":"Her advocacy encourages people to choose empathy instead of judging others by appearance."}
+      {
+        "src": "",
+        "alt": "Lizzie Velásquez portrait related to her anti-bullying story",
+        "caption": "Lizzie Velásquez turned a painful experience with online bullying into a message of courage and kindness."
+      },
+      {
+        "src": "",
+        "alt": "Lizzie Velásquez speaking publicly about bullying and self-worth",
+        "caption": "Her public speaking helped turn her personal experience into an anti-bullying message."
+      },
+      {
+        "src": "",
+        "alt": "Lizzie Velásquez during a TEDx talk",
+        "caption": "Lizzie shared her story and challenged audiences to consider how they define themselves."
+      },
+      {
+        "src": "",
+        "alt": "Lizzie Velásquez advocating against bullying",
+        "caption": "Her advocacy encourages people to choose empathy instead of judging others by appearance."
+      }
     ],
-    "bibleVerse": {"text":"Let all that you do be done in love.","reference":"1 Corinthians 16:14"},
+    "bibleVerse": {
+      "text": "Let all that you do be done in love.",
+      "reference": "1 Corinthians 16:14"
+    },
     "closing": "Lizzie Velásquez did not choose the condition she was born with. She did not choose the cruel video that millions of people watched. And she certainly did not choose the hateful comments that followed. But she chose what she would do next. She chose to speak. She chose to encourage others. She chose to turn pain into purpose. And perhaps the most important lesson is this: someone else's opinion of you does not have to become your opinion of yourself. If you have ever been mocked, rejected, or made to feel like you were not enough, remember Lizzie's question: How do you define yourself? The answer does not belong to the crowd. It belongs to you.",
-    "seo": {"title":"At 17, Lizzie Velásquez Found a Video Mocking Her. She Chose Courage.","description":"A cruel YouTube video changed Lizzie Velásquez's life. Instead of letting cyberbullying define her, she turned her experience into a mission of courage, kindness, and anti-bullying advocacy."},
-    "og": {"title":"At 17, Lizzie Velásquez Found a Video Mocking Her","description":"Lizzie Velásquez turned a painful experience with online bullying into a powerful message of courage, kindness, and self-worth.","image":""},
-    "tags": ["Lizzie Velásquez","bullying","cyberbullying","inspiration","courage","kindness","self-worth","TED Talk","anti-bullying","true story"],
+    "seo": {
+      "title": "At 17, Lizzie Velásquez Found a Video Mocking Her. She Chose Courage.",
+      "description": "A cruel YouTube video changed Lizzie Velásquez's life. Instead of letting cyberbullying define her, she turned her experience into a mission of courage, kindness, and anti-bullying advocacy."
+    },
+    "og": {
+      "title": "At 17, Lizzie Velásquez Found a Video Mocking Her",
+      "description": "Lizzie Velásquez turned a painful experience with online bullying into a powerful message of courage, kindness, and self-worth.",
+      "image": ""
+    },
+    "tags": [
+      "Lizzie Velásquez",
+      "bullying",
+      "cyberbullying",
+      "inspiration",
+      "courage",
+      "kindness",
+      "self-worth",
+      "TED Talk",
+      "anti-bullying",
+      "true story"
+    ],
     "relatedArticles": [],
     "featured": false
   },
   "imageRecommendations": {
-    "cover": {"description":"Dignified editorial portrait of Lizzie Velásquez that emphasizes her strength and advocacy rather than sensationalizing her appearance.","prompt":"Respectful realistic editorial portrait of Lizzie Velásquez, confident and hopeful expression, natural setting, professional documentary photography, warm authentic lighting, inspirational human-interest journalism, no text, no watermark, 16:9","aspectRatio":"16:9"},
+    "cover": {
+      "description": "Recommended editorial cover image matching the article topic.",
+      "prompt": "Professional editorial cover image for: At 17, Lizzie Velásquez Found a Video Mocking Her. She Chose Courage.. Realistic, cinematic journalism photography, no text, no watermark, 16:9.",
+      "aspectRatio": "16:9"
+    },
     "sections": [
-      {"section":1,"description":"Lizzie discovering and confronting the experience of online bullying as a teenager, represented respectfully without reproducing abusive comments.","prompt":"Respectful documentary-style scene representing a teenage girl discovering hurtful online bullying on a computer, emotional but non-graphic, focus on empathy and human experience, realistic editorial photography, no readable hateful text, no watermark, 16:9","aspectRatio":"16:9"},
-      {"section":2,"description":"Lizzie speaking about her life and refusing to be defined by her medical condition or appearance.","prompt":"Realistic documentary portrait of Lizzie Velásquez speaking confidently at a public event, inspirational human-interest journalism, audience softly visible, dignified atmosphere, no text, no watermark, 16:9","aspectRatio":"16:9"},
-      {"section":3,"description":"Lizzie sharing her message from a TEDx-style stage.","prompt":"Realistic editorial photograph of Lizzie Velásquez delivering an inspirational talk on a TEDx-style stage, confident posture, audience in background, professional event photography, no text, no watermark, 16:9","aspectRatio":"16:9"},
-      {"section":4,"description":"Lizzie advocating for kindness and anti-bullying awareness.","prompt":"Realistic documentary-style portrait of Lizzie Velásquez participating in an anti-bullying advocacy event, hopeful expression, supportive community atmosphere, professional human-interest journalism, no text, no watermark, 16:9","aspectRatio":"16:9"}
+      {
+        "section": 1,
+        "description": "Supporting editorial image for section 1: The Video She Never Expected to Find.",
+        "prompt": "Realistic editorial photography illustrating: The Video She Never Expected to Find. Professional news website style, no text, no watermark, 16:9.",
+        "aspectRatio": "16:9"
+      },
+      {
+        "section": 2,
+        "description": "Supporting editorial image for section 2: A Rare Condition Did Not Define Her.",
+        "prompt": "Realistic editorial photography illustrating: A Rare Condition Did Not Define Her. Professional news website style, no text, no watermark, 16:9.",
+        "aspectRatio": "16:9"
+      },
+      {
+        "section": 3,
+        "description": "Supporting editorial image for section 3: Turning Pain Into Purpose.",
+        "prompt": "Realistic editorial photography illustrating: Turning Pain Into Purpose. Professional news website style, no text, no watermark, 16:9.",
+        "aspectRatio": "16:9"
+      },
+      {
+        "section": 4,
+        "description": "Supporting editorial image for section 4: From Bullying Target to Anti-Bullying Advocate.",
+        "prompt": "Realistic editorial photography illustrating: From Bullying Target to Anti-Bullying Advocate. Professional news website style, no text, no watermark, 16:9.",
+        "aspectRatio": "16:9"
+      },
+      {
+        "section": 5,
+        "description": "Supporting editorial image for section 5: The Question Lizzie Asked the World.",
+        "prompt": "Realistic editorial photography illustrating: The Question Lizzie Asked the World. Professional news website style, no text, no watermark, 16:9.",
+        "aspectRatio": "16:9"
+      },
+      {
+        "section": 6,
+        "description": "Supporting editorial image for section 6: What Her Story Can Teach Us Today.",
+        "prompt": "Realistic editorial photography illustrating: What Her Story Can Teach Us Today. Professional news website style, no text, no watermark, 16:9.",
+        "aspectRatio": "16:9"
+      }
     ]
   }
 }
