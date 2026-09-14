@@ -70,7 +70,7 @@ On 2026-09-13, the static article generator was hardened after a real Admin publ
 - The Admin test article `Jaziel Image Upload Test` was successfully regenerated as `articles/jaziel-image-upload-test.html` after the fix, including its 3 sections, images, pagination, closing, and ad slots.
 - Article Schema v1, pagination rules, and article content structure were not changed.
 
-This approach follows GitHub Actions concurrency behavior: workflows sharing a concurrency group can be serialized, preventing simultaneous repository-writing runs from conflicting. citeturn0search0turn0search1
+This approach follows GitHub Actions concurrency behavior: workflows sharing a concurrency group can be serialized, preventing simultaneous repository-writing runs from conflicting.
 
 ## Admin Panel
 
@@ -134,6 +134,18 @@ update that single constant — no other file needs to change.
 commits first. Do not repeat a change that is already marked DONE unless a
 regression is confirmed.
 
+### 2026-09-15 — Jaziel Story author/byline display
+
+- **Priority:** P2 / establish a consistent editorial byline for the homepage and article view without changing Article Schema v1.
+- **Files changed:** `index.html`, `article.html`.
+- **Change:** Homepage featured/latest/popular story metadata now displays `By Jaziel Story`. The dynamic article page also prepends `By Jaziel Story` to article metadata and related-story cards through a bounded presentation-only refresh.
+- **Reason:** User selected **Jaziel Story** as the public editorial author name for the site.
+- **Article Schema:** unchanged and locked; no `author` field was added to `articles.json`.
+- **Verification:** Repository source was inspected after the edits; the homepage contains the byline in featured/latest/popular cards, and `article.html` contains the bounded byline presentation logic for the article metadata and related cards.
+- **Deployment:** Changes committed to `main`; live browser verification remains pending.
+- **Commits:** `daec9dea81ff6817a8380c35a363bb0e2544c7f6`, `83b65bfc4cb70cb603fd053927cb35eecd1811cf`, `996b898eb7f8edfdb26b258bd2ce4c8a14cfc734`.
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
+
 ### 2026-09-15 — Documentation reconciliation for previously undocumented Admin draft/image changes
 
 - **Priority:** P2 / reconcile the repository documentation gap found before continuing the Admin draft/image work.
@@ -193,22 +205,21 @@ regression is confirmed.
 - **Cleanup:** Removed the stale `assets/js/link-fix.js` script reference from `article.html`.
 - **Commits:** `b6c2362564b9f405618b5411219d9f2c791d1251`, `ba70730c3ed0cdea69751206f15b96d1d48feca1`, `6eacf514d273c20c6785d9fed2f0b446126663ce`, `35962fc55d94eaad8bb999511648bc355a1accf8`, `bf8d4609cf17b22b695d493e4e4b86d55e6bdfba`.
 - **Verification:** `node --check` passed and a 5-section fixture produced 3 pages with ordered images.
-- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
 ### 2026-09-13 — Website OG cover metadata
 
+- **Status:** DONE / USER VERIFIED
 - **Priority:** P2 / add website Open Graph/social sharing cover.
 - **Files changed:** `assets/images/og/jaziel-og-cover.png`, `index.html`.
 - **Change:** Added the Jaziel OG cover and website-level Open Graph/Twitter metadata.
-- **Commits:** `99f919e87a390aeeb266942a9472f0102f9cc4c1`, `afcfa4ad5f7301fc319c6f0c722792268393cbb2`.
+- **Commits:** `99f919e87a390aeeb266942a9472f0102f9cc4c1`, `afcfa4ad5f7301c319c6f0c722792268393cbb2`.
 - **Verification:** User confirmed the OG image appears successfully.
-- **Status:** DONE / USER VERIFIED.
 
 ### 2026-09-13 — Contact email updated
 
 - **Priority:** P2 / replace public placeholder contact address.
 - **File:** `contact.html`.
-- **Change:** Replaced `hello@jaziel-story.example` with the user-confirmed contact email in the visible link and mailto target.
+- **Change:** Replaced the placeholder contact address with the user-confirmed contact email in the visible link and mailto target.
 - **Commit:** `59069f9ccd8d97bde1dead9fa5859aa3e2d681a6`.
 - **Status:** DONE / NEEDS LIVE DEPLOYMENT VERIFICATION.
 
@@ -222,9 +233,7 @@ regression is confirmed.
 - **Verification:** JavaScript validation passed on the hardening commits and `node --check` passed for the section-label refinement.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
-### Protected fixes register — do not revert without a confirmed regression
-
-These are protected baseline fixes. If a future bug appears, do not immediately modify or remove these files because they look related. First reproduce the bug, inspect the current version, check this README and `CHANGELOG.md`, and compare the relevant commit.
+### Protected-fix baseline — do not revert without a confirmed regression
 
 - `index.html` + `home-featured-minimal.js` + `home-latest-final.js` — homepage loader/observer consolidation. Do not restore deleted competing loaders.
 - `assets/js/admin-section-labels.js` — bounded event-driven labels; do not restore a persistent DOM observer without a reproduced regression.
@@ -234,65 +243,57 @@ These are protected baseline fixes. If a future bug appears, do not immediately 
 - `.github/workflows/generate-static-articles.yml` — must not recreate `assets/js/link-fix.js` or inject it into pages.
 - `articles.json` — single source of truth and Article Schema v1; do not change its structure as a workaround for an Admin UI bug.
 
-### 2026-09-12 — Admin Preview image order fix
+## 2026-09-12
 
+### Admin Preview image order fix
 - **Priority:** P1 / body images must appear after their matching section.
 - **Fix:** Added `assets/js/admin-preview-order-fix.js`, later hardened with bounded animation-frame retries.
 - **Commits:** `8e8c3af2288eac967a47452fd5ae6f5e96c017f0`, `d134c30290e30a3fa285b54899812145f659c47a`, later `b215a6488313b57637758587d40f242cf3a8b50a`.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
-### 2026-09-12 — Admin Preview stability + Body Image relative-path fix
-
+### Admin Preview stability + Body Image relative-path fix
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
 - **Fix:** Removed the persistent Preview mapping observer approach and updated `body-image-preview.js` to resolve relative repository paths.
 - **Commits:** `3bc626b6f7521f1bf96512f5585dd28cc4b1836d`, `9bac5ef22f98f850c97079df431ea0c63be4da90`, `56e7a982294e438464c4f0a91a26a147fc228753`.
 
-### 2026-09-12 — Admin Preview section/image mapping — superseded
-
+### Admin Preview section/image mapping — superseded
 - **Status:** SUPERSEDED / REVERTED
 - **Original commits:** `1dffe6892795eae230f4cb390a3e5d584d1d379f`, `89428821e921f3ddea6d8c90e70843f38b5dbc25`.
 - **Original approach:** Persistent DOM observer to move body images after matching headings.
 - **Why superseded:** Observer-based DOM repair was unstable and unnecessary as a permanent mechanism.
 - **Replacement:** `admin-preview-order-fix.js` uses bounded animation-frame repair tied to Preview.
 
-### 2026-09-12 — Homepage performance consolidation
-
+### Homepage performance consolidation
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
 - **Priority:** P1 / user-reported homepage performance problem.
 - **Fix:** Homepage now uses one dedicated data/render path; obsolete loaders and observers were removed.
 - **Commits:** `aa690bb0658960d0d3b0871e2e7452b73db3f10b`, `184a89b922fb860079dcd80efadfd87bbc97122b`, `f58ab89ccda1b0183ef636b76b4da46ed0de67cd`, `83bb01c1d20d82de509a4467d2906675fe8a7580`.
 
 ### Live verification — Admin Panel recovered
-
 - **Status:** VERIFIED LIVE
 - **Evidence:** User screenshot showed the deployed Admin Dashboard rendering successfully.
 
 ### Cleanup — one-time admin repair workflow
-
 - **Status:** DONE / REMOVED
 - **File:** `.github/workflows/one-time-admin-source-repair.yml`
 - **Removal commit:** `93c8332bd088464677d7f10eb9bf12a54c1ae3b6`.
 
 ### Most Popular metadata
-
 - **Status:** DONE
 - **File:** `assets/css/popular-fix.css`
 - **Commits:** `04628df976399e4435b6cdff4880dcf0669e42ee`, `85dcca3367804cac57ab6fff58eaceae05db5f94`.
 
 ### Related Stories static image path
-
 - **Status:** DONE / VERIFY IN DEPLOYMENT
 - **File:** `assets/js/related-articles.js`
 - **Commit:** `0516ea890c61b43041925bb980a94c2aaeab1f3f`.
 
 ### JavaScript syntax validation safeguard
-
 - **Status:** ADDED / MUST PASS
 - **File:** `.github/workflows/validate-javascript.yml`
 - **Commit:** `ab238b9e1bd09bb8c772dd8c52833b12e9194117`.
 
 ### Admin source recovery history
-
 - **Status:** SUPERSEDED HISTORY / FINAL SOURCE WORKING LIVE
 - **File:** `admin/admin.js`
 - The incomplete manual replacement `517e3d61f5b4fcb4b000478d12e087bfe053ffa5` is invalid and must never be reused.
@@ -301,26 +302,22 @@ These are protected baseline fixes. If a future bug appears, do not immediately 
 - Do not perform another broad rewrite of `admin/admin.js` unless a new regression is reproduced.
 
 ### Admin deployment cache bust
-
 - **Status:** DONE / VERIFIED LIVE
 - **File:** `admin/index.html`
 - **Commit:** `2822ba6a33336f0dea59c206fb5a7e147f98f8c5`.
 
 ### Cleanup — obsolete runtime loader
-
 - **Status:** DONE
 - **File:** `admin/admin-loader-fix.js`
 - **Commit:** `26c58117d3900eca3bee8ee6a744925b4ac105ce`.
 
 ### AI Writer P1 — request checkout race fix
-
 - **Status:** IMPLEMENTED / NEEDS END-TO-END VERIFICATION
 - **File:** `.github/workflows/ai-writer.yml`
 - **Commit:** `4c1f0d561c39b7c82001e6e7584e1ca1749e1a66`.
 - **Verification:** Fresh end-to-end AI Writer execution is still required.
 
 ### Body Image Add freeze — visual helper loop fix
-
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
 - **Files:** `assets/js/body-image-preview.js`, `assets/js/body-image-labels.js`
 - **Commits:** `2f50a8ccabaef69054490f883be18e51b6c148da`, `b33c07f5dfbd958b910281e264e40e6b1ddcf41d`.
