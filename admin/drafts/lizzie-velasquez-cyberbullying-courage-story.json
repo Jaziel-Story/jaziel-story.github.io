@@ -4,7 +4,7 @@
   "draftMeta": {
     "slug": "lizzie-velasquez-cyberbullying-courage-story",
     "createdAt": "2026-09-14T13:41:00+09:00",
-    "updatedAt": "2026-09-14T21:16:53.232Z",
+    "updatedAt": "2026-09-14T22:09:59.684Z",
     "createdBy": "ChatGPT",
     "updatedBy": "Admin Panel"
   },
@@ -17,7 +17,7 @@
     "date": "2026-09-14",
     "readTime": "6 min read",
     "dek": "A cruel video changed Lizzie Velásquez's life. What happened next became a powerful story about courage, self-worth, kindness, and refusing to let strangers define who you are.",
-    "cover": "",
+    "cover": "assets/images/articles/lizzie-velasquez-cyberbullying-courage-story-cover.jpg",
     "intro": "At just 17 years old, Lizzie Velásquez opened YouTube expecting to find something ordinary. Instead, she discovered a short video using an image of her and labeling her as the \"World's Ugliest Woman.\" The video had already been viewed millions of times. What followed was a flood of cruel comments attacking her appearance and questioning her right to exist. For Lizzie, the experience was devastating. But it eventually became the turning point that helped her decide something important: other people's cruelty would not be allowed to define her identity.",
     "sections": [
       {
@@ -83,22 +83,22 @@
     ],
     "images": [
       {
-        "src": "",
+        "src": "assets/images/articles/lizzie-velasquez-cyberbullying-courage-story-body-1.webp",
         "alt": "Lizzie Velásquez portrait related to her anti-bullying story",
         "caption": "Lizzie Velásquez turned a painful experience with online bullying into a message of courage and kindness."
       },
       {
-        "src": "",
+        "src": "assets/images/articles/lizzie-velasquez-cyberbullying-courage-story-body-2.webp",
         "alt": "Lizzie Velásquez speaking publicly about bullying and self-worth",
         "caption": "Her public speaking helped turn her personal experience into an anti-bullying message."
       },
       {
-        "src": "",
+        "src": "assets/images/articles/lizzie-velasquez-cyberbullying-courage-story-body-3.webp",
         "alt": "Lizzie Velásquez during a TEDx talk",
         "caption": "Lizzie shared her story and challenged audiences to consider how they define themselves."
       },
       {
-        "src": "",
+        "src": "assets/images/articles/lizzie-velasquez-cyberbullying-courage-story-body-4.webp",
         "alt": "Lizzie Velásquez advocating against bullying",
         "caption": "Her advocacy encourages people to choose empathy instead of judging others by appearance."
       },
