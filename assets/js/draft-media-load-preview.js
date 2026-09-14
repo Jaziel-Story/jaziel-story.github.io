@@ -1,16 +1,19 @@
-/* JAZIEL ADMIN — Draft media preview
-   Shows repository-backed cover/body images after Load Draft.
+/* JAZIEL ADMIN — Draft media preview v2
+   Loads repository-backed cover/body images after Load Draft.
    Visual-only; Article Schema v1 and draft storage are unchanged.
 */
 (() => {
   "use strict";
 
-  const resolveSrc = value => {
+  const REPO = "Jaziel-Story/jaziel-story.github.io";
+  const BRANCH = "main";
+  const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/`;
+
+  const resolveRepoUrl = value => {
     const raw = String(value || "").trim();
     if (!raw) return "";
     if (/^(?:https?:|data:|blob:)/i.test(raw)) return raw;
-    try { return new URL(raw.replace(/^\/+/, ""), `${location.origin}/`).href; }
-    catch { return raw; }
+    return `${RAW_BASE}${raw.replace(/^\/+/, "")}`;
   };
 
   function installStyles() {
@@ -21,17 +24,13 @@
       .draft-media-preview{margin:10px 0 14px;padding:10px;border:1px solid rgba(127,127,127,.22);border-radius:12px;background:rgba(127,127,127,.06)}
       .draft-media-preview-label{font-size:.78rem;font-weight:700;letter-spacing:.02em;margin-bottom:7px;opacity:.78}
       .draft-media-preview img{display:block;max-width:100%;width:auto;max-height:320px;border-radius:9px;object-fit:contain;background:#eee}
-      .draft-media-preview-empty{font-size:.8rem;opacity:.58}
+      .draft-media-preview-status{font-size:.8rem;opacity:.62}
+      .draft-media-preview-error{font-size:.8rem;color:#b42318}
     `;
     document.head.appendChild(style);
   }
 
-  function coverPreview() {
-    const input = document.querySelector("#inCoverUrl");
-    if (!input) return;
-    const src = resolveSrc(input.value);
-    const host = input.closest(".field, .form-group, .editor-field") || input.parentElement;
-    if (!host) return;
+  function imageBox(host, label, src) {
     let box = host.querySelector(":scope > .draft-media-preview");
     if (!box) {
       box = document.createElement("div");
@@ -39,8 +38,21 @@
       host.appendChild(box);
     }
     box.innerHTML = src
-      ? `<div class="draft-media-preview-label">Cover Preview</div><img src="${src.replace(/"/g,"&quot;")}" alt="Cover preview">`
-      : `<div class="draft-media-preview-empty">No cover image</div>`;
+      ? `<div class="draft-media-preview-label">${label}</div><div class="draft-media-preview-status">Loading image from GitHub…</div><img alt="${label.replace(/"/g, "&quot;")}" style="display:none">`
+      : `<div class="draft-media-preview-status">No repository image path saved in this draft.</div>`;
+    if (!src) return;
+    const img = box.querySelector("img");
+    img.onload = () => { img.style.display = "block"; box.querySelector(".draft-media-preview-status")?.remove(); };
+    img.onerror = () => { img.style.display = "none"; const status = box.querySelector(".draft-media-preview-status"); if (status) { status.className = "draft-media-preview-error"; status.textContent = "GitHub image could not be loaded."; } };
+    img.src = src;
+  }
+
+  function coverPreview() {
+    const input = document.querySelector("#inCoverUrl");
+    if (!input) return;
+    const host = input.closest(".field, .form-group, .editor-field") || input.parentElement;
+    if (!host) return;
+    imageBox(host, "Cover Preview", resolveRepoUrl(input.value));
   }
 
   function bodyPreviews() {
@@ -48,16 +60,7 @@
     if (!list) return;
     [...list.querySelectorAll(".repeat-item")].forEach((item, i) => {
       const input = item.querySelector("[data-image-url]");
-      const src = resolveSrc(input?.value || "");
-      let box = item.querySelector(":scope > .draft-media-preview");
-      if (!box) {
-        box = document.createElement("div");
-        box.className = "draft-media-preview";
-        item.insertBefore(box, item.firstElementChild);
-      }
-      box.innerHTML = src
-        ? `<div class="draft-media-preview-label">Body Image ${i + 1} — Draft Preview</div><img src="${src.replace(/"/g,"&quot;")}" alt="Draft preview of Body Image ${i + 1}">`
-        : `<div class="draft-media-preview-empty">No image selected</div>`;
+      imageBox(item, `Body Image ${i + 1} — Draft Preview`, resolveRepoUrl(input?.value));
     });
   }
 
@@ -77,7 +80,7 @@
   let attempts = 0;
   function boot() {
     apply();
-    if (attempts++ < 12) setTimeout(boot, 250);
+    if (attempts++ < 20) setTimeout(boot, 250);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot, { once: true });
   else boot();
