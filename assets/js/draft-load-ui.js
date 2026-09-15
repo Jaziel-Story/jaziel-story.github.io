@@ -13,21 +13,22 @@
   async function draft(slug){const x=await get(`/contents/${DIR}/${encodeURIComponent(slug)}.json?ref=${BRANCH}&t=${Date.now()}`);return{sha:x.sha,draft:JSON.parse(b64(x.content))}}
   async function drafts(){const x=await get(`/contents/${DIR}?ref=${BRANCH}&t=${Date.now()}`);const names=(Array.isArray(x)?x:[]).filter(x=>x.type==="file"&&x.name.endsWith(".json")).map(x=>x.name.slice(0,-5));const af=await get(`/contents/articles.json?ref=${BRANCH}&t=${Date.now()}`),a=JSON.parse(b64(af.content)),pub=new Set((a.articles||[]).map(x=>x&&x.slug).filter(Boolean));const out=[];for(const s of names.filter(s=>!pub.has(s))){try{const d=await draft(s),x=d.draft.article||{};out.push({slug:s,title:x.title||s,category:x.category||"Draft",readTime:x.readTime||"",updatedAt:d.draft.draftMeta?.updatedAt||""})}catch(e){console.warn(e)}}return out.sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))}
   function setv(s,v){const e=$(s);if(!e)return;e.value=v??"";}
+  function syncInput(s){const e=$(s);if(e)e.dispatchEvent(new Event("input",{bubbles:true}))}
   async function count(sel,btn,n){for(let i=$$(sel).length;i<n;i++){$(btn)?.click();await new Promise(r=>setTimeout(r,0))}}
   async function apply(a){
     const m={"#inTitle":a.title,"#inSlug":a.slug,"#inCategory":a.category,"#inDate":a.date,"#inReadTime":a.readTime,"#inDescription":a.description,"#inDek":a.dek,"#inIntro":a.intro,"#inClosing":a.closing,"#inVerseText":a.bibleVerse?.text,"#inVerseRef":a.bibleVerse?.reference,"#inCoverUrl":a.cover,"#inSeoTitle":a.seo?.title,"#inSeoDesc":a.seo?.description,"#inOgTitle":a.og?.title,"#inOgDesc":a.og?.description,"#inOgImage":a.og?.image};
     Object.entries(m).forEach(([s,v])=>setv(s,v));
-    const f=$("#inFeatured");if(f)f.checked=Boolean(a.featured);
+    Object.keys(m).forEach(syncInput);
+    const f=$("#inFeatured");if(f){f.checked=Boolean(a.featured);f.dispatchEvent(new Event("change",{bubbles:true}))}
     await count("[data-section-heading]","#btnAddSection",Math.max(1,(a.sections||[]).length));
     $$("[data-section-heading]").slice((a.sections||[]).length).forEach(e=>e.closest(".repeat-item")?.querySelector("[data-remove-section]")?.click());
-    (a.sections||[]).forEach((s,i)=>{setv(`[data-section-heading=\"${i}\"]`,s.heading);setv(`[data-section-paragraphs=\"${i}\"]`,(s.paragraphs||[]).join("\n"))});
+    (a.sections||[]).forEach((s,i)=>{setv(`[data-section-heading=\"${i}\"]`,s.heading);setv(`[data-section-paragraphs=\"${i}\"]`,(s.paragraphs||[]).join("\n"));syncInput(`[data-section-heading=\"${i}\"]`);syncInput(`[data-section-paragraphs=\"${i}\"]`)});
     await count("#bodyImagesList [data-image-url]","#btnAddImage",(a.images||[]).length);
     $$("#bodyImagesList .repeat-item").slice((a.images||[]).length).forEach(e=>e.querySelector("[data-remove-image]")?.click());
-    (a.images||[]).forEach((x,i)=>{setv(`#bodyImagesList [data-image-url=\"${i}\"]`,x.src||"");setv(`#bodyImagesList [data-image-alt=\"${i}\"]`,x.alt||"");setv(`#bodyImagesList [data-image-caption=\"${i}\"]`,x.caption||"")});
+    (a.images||[]).forEach((x,i)=>{setv(`#bodyImagesList [data-image-url=\"${i}\"]`,x.src||"");setv(`#bodyImagesList [data-image-alt=\"${i}\"]`,x.alt||"");setv(`#bodyImagesList [data-image-caption=\"${i}\"]`,x.caption||"");syncInput(`#bodyImagesList [data-image-url=\"${i}\"]`);syncInput(`#bodyImagesList [data-image-alt=\"${i}\"]`);syncInput(`#bodyImagesList [data-image-caption=\"${i}\"]`)});
     window.__jazielDraftRelated=a.relatedArticles||[];
     const ti=$("#tagInput");
     if(ti){$$("#tagsRow .tag-pill button[data-remove-tag]").forEach(b=>b.click());(a.tags||[]).forEach(t=>{ti.value=t;ti.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true}))})}
-    requestAnimationFrame(()=>{["#inTitle","#inSlug","#inCoverUrl","#inOgImage"].forEach(s=>$(s)?.dispatchEvent(new Event("input",{bubbles:true})));});
   }
   function close(){document.getElementById("jazielDraftChooser")?.remove()}
   function styles(){if($("#jazielDraftChooserStyles"))return;const s=document.createElement("style");s.id="jazielDraftChooserStyles";s.textContent=`#jazielDraftChooser{z-index:95}.jdc-box{max-width:720px!important}.jdc-title{margin:0 0 5px;font-size:1.15rem}.jdc-sub{margin:0 0 16px;color:var(--muted);font-size:.82rem}.jdc-list{display:flex;flex-direction:column;gap:8px}.jdc-card{display:block;width:100%;text-align:left;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);cursor:pointer;font:inherit}.jdc-card:hover{background:var(--bg);border-color:var(--text)}.jdc-title2{font-weight:700;line-height:1.35}.jdc-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px;color:var(--muted);font-size:.74rem}.jdc-slug{margin-top:5px;color:var(--muted);font-size:.7rem;word-break:break-all}.jdc-close{margin-top:14px;width:100%;justify-content:center}`;document.head.appendChild(s)}
