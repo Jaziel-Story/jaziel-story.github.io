@@ -85,6 +85,34 @@
     document.head.appendChild(script);
   }
 
+  function setLinkRel(rel, href) {
+    const selector = `link[rel="${rel}"]`;
+    let link = document.head.querySelector(selector);
+    if (!href) {
+      if (link) link.remove();
+      return;
+    }
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = rel;
+      document.head.appendChild(link);
+    }
+    link.href = href;
+  }
+
+  function setPaginationSEO(canonicalBase, current, total) {
+    const canonicalURL = current === 1 ? canonicalBase : `${canonicalBase}?page=${current}`;
+    setMeta('link[rel="canonical"]', "href", canonicalURL);
+    setMeta('meta[property="og:url"]', "content", canonicalURL);
+
+    const previousURL = current > 1
+      ? `${canonicalBase}${current - 1 === 1 ? "" : `?page=${current - 1}`}`
+      : "";
+    const nextURL = current < total ? `${canonicalBase}?page=${current + 1}` : "";
+    setLinkRel("prev", previousURL);
+    setLinkRel("next", nextURL);
+  }
+
   function paginatedRenderArticle(root, article) {
     if (!root) return;
 
@@ -99,7 +127,7 @@
     const meta = [article.readTime, formatDate(article.date)].filter(Boolean).join(" · ");
     const dek = article.dek || article.description || "";
     const coverHTML = isFirst && article.cover
-      ? `<div class="article-cover"><img src="${escapeAttribute(article.cover)}" alt="${escapeAttribute(article.title || "")}" loading="lazy" decoding="async"></div>`
+      ? `<div class="article-cover"><img src="${escapeAttribute(article.cover)}" alt="${escapeAttribute(article.title || "")}" loading="eager" fetchpriority="high" decoding="async"></div>`
       : "";
 
     const articleBase = `article.html?slug=${encodeURIComponent(article.slug || "")}`;
@@ -176,10 +204,8 @@
     if (meta) meta.hidden = !showIntro;
 
     const canonical = `${window.location.origin}/articles/${encodeURIComponent(slug)}.html`;
-    const canonicalURL = current === 1 ? canonical : `${canonical}?page=${current}`;
-    setMeta('link[rel="canonical"]', "href", canonicalURL);
-    setMeta('meta[property="og:url"]', "content", canonicalURL);
-    setArticleStructuredData(canonicalURL);
+    setPaginationSEO(canonical, current, total);
+    setArticleStructuredData(current === 1 ? canonical : `${canonical}?page=${current}`);
   }
 
   window.renderArticle = paginatedRenderArticle;
