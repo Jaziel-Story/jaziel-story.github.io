@@ -20,6 +20,10 @@
   text-align: center;
 }
 
+.article-continue[hidden] {
+  display: none;
+}
+
 .article-continue span {
   font-size: 1.1rem;
 }
