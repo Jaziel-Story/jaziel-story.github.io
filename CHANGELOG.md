@@ -12,6 +12,25 @@ This file is the project memory for repository changes. Read it before making a 
 - Record every repository change here with its purpose, files, commit, verification, and status.
 - If a previous fix is later reverted or superseded, record that explicitly instead of treating the old fix as still active.
 
+## 2026-09-16 — GA4 Article Analytics foundation
+
+### GA4 tracking and article-view events
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P1 / establish reliable traffic and article-read measurement before building the Admin Analytics dashboard.
+- **GA4 Property:** `Jaziel Story`.
+- **Web stream:** `Jaziel Story Website` — `https://jaziel-story.github.io`.
+- **Measurement ID:** `G-HC6NTTN5KP`.
+- **Files:** `assets/js/jaziel-analytics.js`, `index.html`, `article.html`, `assets/js/article-pagination.js`, `category.html`, `all.html`, `privacy.html`.
+- **Change:** Added a shared GA4 loader and an `article_view` event. Article events record the article slug, article title, pagination page, and whether the view is paginated or All Page. Static generated article pages load the same analytics module through `article-pagination.js`, so future generated pages inherit tracking without manually editing every generated HTML file.
+- **Reason:** Jaziel is a static GitHub Pages site, so analytics must remain separate from Article Schema v1 while still identifying article-level readership.
+- **Scope:** No `views` field or analytics data was added to `articles.json`; Article Schema v1 remains unchanged. Admin Panel analytics reporting is a later phase that can consume GA4 data.
+- **Privacy:** Updated `privacy.html` so the public policy no longer incorrectly states that Jaziel has no analytics.
+- **Verification before change:** Repository search confirmed no existing GA4/Google Analytics implementation. Homepage and dynamic article heads were inspected. Static article generation was inspected and confirmed to load `article-pagination.js`, allowing the analytics loader to cover generated article pages without rewriting the generator workflow.
+- **Google documentation basis:** GA4's standard Google tag sends `page_view` automatically, and Google documents custom events for additional content measurement. citeturn0search0turn0search1
+- **Commits:** `e1349ed7301082d2651baff2a1ceb647eefbd254` (`Add Jaziel GA4 analytics tracking`), `f12b8e778e7b5449afaf26593f46e3f12d8aec1c` (`Load GA4 tracking on homepage`), `bbb45ef35282d02200eb049e2e5b955bb317bd62` (`Load GA4 tracking on dynamic article page`), `faaf165b055795d1c41381aeec9159572d9779c4` (`Load GA4 tracking on static article pages`), `33b7b976c803f1c23627ce82fac0714a1a10177c` (`Update privacy policy for GA4 analytics`), `0350a12d686b2cbfb1e888ddeba462b2dbc5f564` (`Load GA4 tracking on category pages`), `690c3832765e8a36ddd8e6c9f67c9299298b0304` (`Load GA4 tracking on all stories page`).
+- **Article Schema:** unchanged and locked.
+- **Next verification:** Wait for GitHub Pages deployment, then open the live site and verify the GA4 Realtime report receives the visit and the `article_view` event appears when an article is opened.
+
 ## 2026-09-16 — All Page Continue Reading visibility fix
 
 ### Static All Page regression
