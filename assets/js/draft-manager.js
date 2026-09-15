@@ -39,6 +39,28 @@
   function makeDraft(article) { const now = new Date().toISOString(); return { draftVersion: 1, draftStatus: "draft", draftMeta: { slug: article.slug, createdAt: loaded.draft?.draftMeta?.createdAt || now, updatedAt: now, createdBy: loaded.draft?.draftMeta?.createdBy || "Admin Panel", updatedBy: "Admin Panel" }, article, imageRecommendations: recommendations(article) }; }
   function validateDraft(d) { if (!d || d.draftVersion !== 1 || d.draftStatus !== "draft" || !d.draftMeta?.slug || !d.article || d.article.slug !== d.draftMeta.slug || !d.imageRecommendations) throw new Error("Invalid Draft JSON Contract v1.0."); if (!Array.isArray(d.article.sections) || !Array.isArray(d.article.images) || !Array.isArray(d.article.tags) || !Array.isArray(d.article.relatedArticles)) throw new Error("Draft Article Schema is incomplete."); return d; }
   async function getDraft(s) { try { const d = await request(`/contents/${DRAFT_DIR}/${encodeURIComponent(s)}.json?ref=${encodeURIComponent(BRANCH)}&t=${Date.now()}`); return { sha: d.sha, draft: validateDraft(JSON.parse(b64utf8(d.content))) }; } catch (e) { if (e.status === 404) return null; throw e; } }
+  async function cleanupPublishedDrafts() {
+    const items = await request(`/contents/${DRAFT_DIR}?ref=${encodeURIComponent(BRANCH)}&t=${Date.now()}`);
+    const drafts = Array.isArray(items) ? items.filter(x => x.type === "file" && x.name.endsWith(".json")).map(x => x.name.slice(0, -5)) : [];
+    if (!drafts.length) return [];
+    const articles = await request(`/contents/articles.json?ref=${encodeURIComponent(BRANCH)}&t=${Date.now()}`);
+    const parsed = JSON.parse(b64utf8(articles.content));
+    const published = new Set((parsed.articles || []).map(a => a && a.slug).filter(Boolean));
+    const removed = [];
+    for (const s of drafts) {
+      if (!published.has(s)) continue;
+      try {
+        const found = await getDraft(s);
+        if (!found) continue;
+        await request(`/contents/${DRAFT_DIR}/${encodeURIComponent(s)}.json`, { method: "DELETE", body: JSON.stringify({ message: `Admin: remove published draft "${s}"`, sha: found.sha, branch: BRANCH }) });
+        removed.push(s);
+      } catch (err) {
+        console.warn("Could not remove published draft", s, err);
+      }
+    }
+    if (removed.length) toast(`Removed ${removed.length} published draft${removed.length === 1 ? "" : "s"} from Drafts.`, "info");
+    return removed;
+  }
   async function listDrafts() {
     try {
       const items = await request(`/contents/${DRAFT_DIR}?ref=${encodeURIComponent(BRANCH)}&t=${Date.now()}`);
@@ -103,6 +125,19 @@
   async function applyDraft(d) { const a = d.article; setSimpleFields(a); await applySections(a); await applyImages(a); applyTags(a); loaded.slug = d.draftMeta.slug; loaded.draft = d; toast(`Draft loaded: ${d.draftMeta.slug}`, "success"); }
   async function loadDraft() { if (!token()) throw new Error("A GitHub token with Contents read access is required to load drafts."); const drafts = await listDrafts(); if (!drafts.length) throw new Error("No GitHub drafts found."); const current = slug(); const selected = drafts.includes(current) ? current : prompt(`Available drafts:\n\n${drafts.join("\n")}\n\nEnter draft slug to load:`); if (!selected) return; const found = await getDraft(selected.trim()); if (!found) throw new Error("Draft not found."); await applyDraft(found.draft); loaded.sha = found.sha; }
   async function clearDraft() { if (!token()) throw new Error("A GitHub token with Contents write access is required to clear drafts."); const s = loaded.slug || slug(); if (!s) throw new Error("Enter or load a draft slug first."); const found = await getDraft(s); if (!found) throw new Error("Draft not found on GitHub."); if (!confirm(`Delete GitHub draft “${s}”? This cannot be undone.`)) return; await request(`/contents/${DRAFT_DIR}/${encodeURIComponent(s)}.json`, { method: "DELETE", body: JSON.stringify({ message: `Delete draft: ${s}`, sha: found.sha, branch: BRANCH }) }); loaded.sha = null; loaded.slug = null; loaded.draft = null; toast("GitHub draft deleted.", "info"); }
-  function install() { document.addEventListener("click", async e => { const b = e.target.closest?.("#btnSaveDraft, #btnLoadDraft, #btnClearDraft"); if (!b) return; e.preventDefault(); e.stopImmediatePropagation(); try { if (b.id === "btnSaveDraft") await saveDraft(); else if (b.id === "btnLoadDraft") await loadDraft(); else await clearDraft(); } catch (err) { console.error(err); toast(err.message || String(err), "error"); } }, true); }
+  function startPublishedDraftCleanup() {
+    if (!token()) return;
+    let running = false;
+    const run = async () => {
+      if (running || document.hidden) return;
+      running = true;
+      try { await cleanupPublishedDrafts(); } catch (err) { console.warn("Published draft cleanup check failed", err); }
+      running = false;
+    };
+    run();
+    window.addEventListener("focus", run);
+    setInterval(run, 10000);
+  }
+  function install() { document.addEventListener("click", async e => { const b = e.target.closest?.("#btnSaveDraft, #btnLoadDraft, #btnClearDraft"); if (!b) return; e.preventDefault(); e.stopImmediatePropagation(); try { if (b.id === "btnSaveDraft") await saveDraft(); else if (b.id === "btnLoadDraft") await loadDraft(); else await clearDraft(); } catch (err) { console.error(err); toast(err.message || String(err), "error"); } }, true); startPublishedDraftCleanup(); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once: true }); else install();
 })();
