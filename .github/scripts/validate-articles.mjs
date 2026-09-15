@@ -20,7 +20,7 @@ const required = ["id","title","slug","description","category","date","intro","c
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const object = value => value && typeof value === "object" && !Array.isArray(value);
 const text = value => typeof value === "string" && value.trim().length > 0;
-const isRemoteUrl = value => /^https?:\/\//i.test(String(value || "").trim());
+const isRemoteUrl = value => /^(?:https?:\/\/|\/\/)/i.test(String(value || "").trim());
 const localPath = value => String(value || "").trim().replace(/^\/+/, "");
 const assetExists = value => isRemoteUrl(value) || (Boolean(value) && existsSync(localPath(value)));
 
