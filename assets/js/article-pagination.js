@@ -234,4 +234,14 @@
   document.addEventListener("DOMContentLoaded", activateStaticPage);
 })();
 
+/* Static generated article pages use this helper, so load the shared analytics
+   module here instead of modifying every generated HTML file manually. */
+if (document.body?.dataset.page === "static-article" && !document.querySelector("script[data-jaziel-analytics]")) {
+  const analyticsScript = document.createElement("script");
+  analyticsScript.src = "../assets/js/jaziel-analytics.js?v=20260916-1";
+  analyticsScript.defer = true;
+  analyticsScript.dataset.jazielAnalytics = "true";
+  document.head.appendChild(analyticsScript);
+}
+
 /* Regeneration trigger: keep static generated pages aligned with this helper. */
