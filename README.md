@@ -156,13 +156,57 @@ this setup on static GitHub Pages hosting.
   up. You always review the generated draft before publishing — nothing is
   auto-published.
 
+## Admin Draft & Image Regression Prevention
+
+These rules are mandatory for future Admin draft, editor, and image fixes. They are based on the real regressions found while loading and editing the Victoria Beckham draft on 2026-09-16.
+
+### Draft loading must update application state, not only the visible form
+
+- A successful **Load Draft** action is not considered fixed merely because the success toast appears or the HTML inputs show values.
+- The loader must use the actual persisted draft payload shape. Current drafts may contain the article under `draft.article`; compatibility with a direct article payload must remain supported where applicable.
+- After loading, values must be synchronized with the Admin application's internal `state.editor`, not only assigned to DOM `.value` properties.
+- Fields that normally use `input`/`change` listeners must receive the same events or an equivalent official state-update path used by the editor.
+- Before declaring the fix complete, test **Load Draft → editor fields → sections → body images → Save Draft → Publish validation**.
+
+### Draft image paths must be verified against the repository
+
+- Never assume a draft image URL is valid because it contains the expected slug.
+- For every cover/body image referenced by a repository-backed draft, verify that the exact file exists under `assets/images/articles/`.
+- Verify the exact filename, extension, slug spelling, and body-image numbering. A `.webp` reference is not interchangeable with an existing `.jpg` file.
+- For an article with N body sections, verify the intended N body-image paths and their sequential mapping before declaring the draft ready.
+- A preview showing only a URL or a blank image area must trigger a repository-file check before changing frontend code.
+
+### Required verification sequence for future Admin draft/image fixes
+
+1. Inspect the current draft JSON in `admin/drafts/`.
+2. Inspect the actual files in `assets/images/articles/`.
+3. Inspect the current loader/editor state flow and its event listeners before changing code.
+4. Reproduce the reported symptom and identify the exact root cause.
+5. Make the smallest targeted change; do not broadly rewrite `admin/admin.js`.
+6. Run JavaScript syntax validation for changed JavaScript.
+7. Confirm the deployed GitHub Pages workflow completes successfully.
+8. Hard-refresh the Admin Panel and retest the exact user flow.
+9. For draft loading, verify both **visible DOM values** and **publish-time application state**.
+10. For images, verify both **repository file existence** and **Admin preview rendering**.
+11. Only after these checks pass may a fix be marked DONE.
+
+### Cache and deployment rule
+
+When a client-side Admin helper changes, the deployed script must be cache-busted when needed, and the verification must be performed against the deployed version rather than only the repository source.
+
+### Protected debugging rule
+
+Do not guess at a new fix from the symptom alone. First inspect the persisted data, the current runtime state flow, the exact event/listener path, the repository files, and the recent commits. If the same bug has already been fixed, treat a new report as a possible deployment/cache/data mismatch until a new regression is reproduced.
+
+### One important limitation
+
+These rules reduce recurrence and make regressions easier to detect; they do not guarantee that a future bug can never occur. A future report must still be reproduced and classified before code is changed.
+
 ### One-time setup for the AI Writer
 
 1. Get a Gemini API key from Google AI Studio.
-2. In this repository: **Settings → Secrets and variables → Actions → New
-   repository secret**, name it `GEMINI_API_KEY`, and paste the key.
-3. In the Admin Panel's Settings tab, add a GitHub Personal Access Token scoped
-   to this repository with `Contents: Read and write` and `Actions: Read and write`.
+2. In this repository: **Settings → Secrets and variables → Actions → New repository secret**, name it `GEMINI_API_KEY`, and paste the key.
+3. In the Admin Panel's Settings tab, add a GitHub Personal Access Token scoped to this repository with `Contents: Read and write` and `Actions: Read and write`.
 
 The Gemini model used is configured in one place:
 `GEMINI_MODEL` at the top of `.github/scripts/generate-article.mjs`
@@ -185,6 +229,17 @@ update that single constant — no other file needs to change.
 `CHANGELOG.md`. Before making another fix, check these logs and the recent Git
 commits first. Do not repeat a change that is already marked DONE unless a
 regression is confirmed.
+
+### 2026-09-16 — Admin draft/image regression prevention rules recorded
+
+- **Priority:** P1 / prevent recurrence of the Admin draft-loading and image-path/preview regressions reproduced during the Victoria Beckham draft workflow.
+- **Files changed:** `README.md`.
+- **Change:** Added mandatory regression-prevention rules covering persisted draft payload mapping, synchronization with `state.editor`, event-driven field updates, exact repository image-path verification, section-to-image mapping, cache/deployment verification, and the required Admin end-to-end test sequence.
+- **Reason:** The previous incident showed that a successful Load Draft toast could occur while the editor's internal state remained empty, and that draft image URLs could point to filenames that did not exist even though the correct six image files were present in the repository.
+- **Related fixes already implemented:** `f6be15eb3463fad283b9eab726242135917e6e7e`, `709686df20e9e677c0b0b3a8c67e4289c8b6d973`, `4ae8af49c644ab885e7c7640aa90b8bdd4f94735`, `04a662c1bc23c91934e27d71ce73982fac835707`.
+- **Article Schema:** unchanged and locked.
+- **Verification:** README was re-audited against the current repository rules and recent commits before this documentation update. No application logic was changed by this documentation commit.
+- **Status:** DOCUMENTED / PREVENTION RULES ACTIVE.
 
 ### 2026-09-16 — Verification roadmap recorded after SEO/performance milestone
 
@@ -226,7 +281,7 @@ regression is confirmed.
 - **Change:** Added the shared `jaziel-main-writers` concurrency group with queued execution, plus fetch/rebase/retry push handling in both repository-writing workflows.
 - **Reason:** A real Admin publish produced a non-fast-forward rejection in the generator when the sitemap workflow pushed first.
 - **Commits:** `fff782a471f8118addd1b9cf8bb1c4d300969a7e`, `30a629014ddb521e3e18d8f4699323c157332619`, `10a00e0469ae15d88fb6246864689cb1b973a9c1`, `6bafaaaa326889233335429ed185b9bbc146d05a`.
-- **Verification:** Generator successfully created `articles/jaziel-image-upload-test.html` and pushed it to `main`. The generated page contains the test article's cover, three sections/images, pagination, closing, and ad slots.
+- **Verification:** Generator successfully created `articles/jaziel-image-upload-test.html` and pushed it to `main`. The generated page contains the test article's cover, three sections, images, pagination, closing, and ad slots.
 - **Status:** IMPLEMENTED / PIPELINE LIVE VERIFICATION CONTINUES.
 
 ### 2026-09-13 — SEO/indexability foundation
