@@ -82,9 +82,9 @@
   }
 
   function rangeConfig(key) {
-    if (key === "30d") return { label: "Last 30 days", startDate: "30daysAgo", endDate: "yesterday" };
+    if (key === "30d") return { label: "Last 30 days", startDate: "29daysAgo", endDate: "today" };
     if (key === "today") return { label: "Today", startDate: "today", endDate: "today" };
-    return { label: "Last 7 days", startDate: "7daysAgo", endDate: "yesterday" };
+    return { label: "Last 7 days", startDate: "6daysAgo", endDate: "today" };
   }
 
   async function runReport(body) {
