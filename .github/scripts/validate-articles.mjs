@@ -1,5 +1,5 @@
 // Dependency-free validator for Jaziel Article Schema v1.
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 
 const PATH = "articles.json";
 const fail = messages => {
@@ -20,6 +20,9 @@ const required = ["id","title","slug","description","category","date","intro","c
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const object = value => value && typeof value === "object" && !Array.isArray(value);
 const text = value => typeof value === "string" && value.trim().length > 0;
+const isRemoteUrl = value => /^https?:\/\//i.test(String(value || "").trim());
+const localPath = value => String(value || "").trim().replace(/^\/+/, "");
+const assetExists = value => isRemoteUrl(value) || (Boolean(value) && existsSync(localPath(value)));
 
 for (const [index, article] of data.articles.entries()) {
   const label = `articles[${index}]`;
@@ -34,6 +37,11 @@ for (const [index, article] of data.articles.entries()) {
   if (article.featured !== undefined && typeof article.featured !== "boolean") errors.push(`${label}: "featured" must be boolean`);
   if (article.views !== undefined && (!Number.isFinite(article.views) || article.views < 0)) errors.push(`${label}: "views" must be a non-negative number`);
 
+  if (article.cover !== undefined) {
+    if (!text(article.cover)) errors.push(`${label}: "cover" must be a non-empty string when present`);
+    else if (!assetExists(article.cover)) errors.push(`${label}: cover asset not found "${article.cover}"`);
+  }
+
   if (!Array.isArray(article.sections) || article.sections.length === 0) errors.push(`${label}: "sections" must be a non-empty array`);
   else article.sections.forEach((section, si) => {
     const path = `${label}.sections[${si}]`;
@@ -45,9 +53,14 @@ for (const [index, article] of data.articles.entries()) {
   if (!Array.isArray(article.images)) errors.push(`${label}: "images" must be an array`);
   else article.images.forEach((image, ii) => {
     const path = `${label}.images[${ii}]`;
-    if (typeof image === "string") { if (!text(image)) errors.push(`${path}: image path must be non-empty`); return; }
+    if (typeof image === "string") {
+      if (!text(image)) errors.push(`${path}: image path must be non-empty`);
+      else if (!assetExists(image)) errors.push(`${path}: image asset not found "${image}"`);
+      return;
+    }
     if (!object(image)) { errors.push(`${path}: must be a string or object`); return; }
     if (!text(image.src)) errors.push(`${path}.src must be a non-empty string`);
+    else if (!assetExists(image.src)) errors.push(`${path}: image asset not found "${image.src}"`);
     if (image.alt !== undefined && typeof image.alt !== "string") errors.push(`${path}.alt must be a string when present`);
     if (image.caption !== undefined && typeof image.caption !== "string") errors.push(`${path}.caption must be a string when present`);
   });
@@ -70,7 +83,25 @@ for (const [index, article] of data.articles.entries()) {
   }
 
   if (!object(article.og)) errors.push(`${label}: "og" must be an object`);
-  else for (const field of ["title","description","image"]) if (!text(article.og[field])) errors.push(`${label}.og.${field} must be a non-empty string`);
+  else {
+    for (const field of ["title","description","image"]) if (!text(article.og[field])) errors.push(`${label}.og.${field} must be a non-empty string`);
+    if (text(article.og.image) && !assetExists(article.og.image)) errors.push(`${label}: OG image asset not found "${article.og.image}"`);
+  }
+}
+
+// Cross-article references are validated only after every article ID/slug is known.
+const knownIds = ids;
+const knownSlugs = slugs;
+for (const [index, article] of data.articles.entries()) {
+  if (!object(article) || !Array.isArray(article.relatedArticles)) continue;
+  article.relatedArticles.forEach((ref, ri) => {
+    if (!knownIds.has(ref) && !knownSlugs.has(ref)) {
+      errors.push(`articles[${index}].relatedArticles[${ri}]: unknown article reference "${ref}"`);
+    }
+    if (ref === article.id || ref === article.slug) {
+      errors.push(`articles[${index}].relatedArticles[${ri}]: article cannot relate to itself`);
+    }
+  });
 }
 
 if (errors.length) fail(errors);
