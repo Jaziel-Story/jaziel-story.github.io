@@ -8,6 +8,10 @@
 
   const PAGE_SIZE = 2;
 
+  function isAllPage() {
+    return new URLSearchParams(window.location.search).get("page") === "all";
+  }
+
   function getPageNumber(totalPages) {
     const raw = Number.parseInt(new URLSearchParams(window.location.search).get("page"), 10);
     if (!Number.isFinite(raw) || raw < 1) return 1;
@@ -18,7 +22,7 @@
     return Math.max(1, Math.ceil((Array.isArray(sections) ? sections.length : 0) / PAGE_SIZE));
   }
 
-  function paginationHTML(current, total, hrefForPage) {
+  function paginationHTML(current, total, hrefForPage, allHref) {
     if (total <= 1) return "";
 
     const buttons = Array.from({ length: total }, (_, index) => {
@@ -27,10 +31,14 @@
       return `<a class="article-page-number${active ? " active" : ""}" href="${escapeAttribute(hrefForPage(page))}" aria-current="${active ? "page" : "false"}">${page}</a>`;
     }).join("");
 
+    const allActive = current === "all";
+    const status = allActive ? "All Pages" : `Page ${current} of ${total}`;
+    const allLink = `<a class="article-page-number article-page-all${allActive ? " active" : ""}" href="${escapeAttribute(allHref)}" aria-current="${allActive ? "page" : "false"}">All Page</a>`;
+
     return `
       <nav class="article-pagination" aria-label="Article pages">
-        <div class="article-page-status">Page ${current} of ${total}</div>
-        <div class="article-page-numbers">${buttons}</div>
+        <div class="article-page-status">${status}</div>
+        <div class="article-page-numbers">${buttons}${allLink}</div>
       </nav>
     `;
   }
@@ -101,6 +109,14 @@
   }
 
   function setPaginationSEO(canonicalBase, current, total) {
+    if (current === "all") {
+      setMeta('link[rel="canonical"]', "href", canonicalBase);
+      setMeta('meta[property="og:url"]', "content", canonicalBase);
+      setLinkRel("prev", "");
+      setLinkRel("next", "");
+      return;
+    }
+
     const canonicalURL = current === 1 ? canonicalBase : `${canonicalBase}?page=${current}`;
     setMeta('link[rel="canonical"]', "href", canonicalURL);
     setMeta('meta[property="og:url"]', "content", canonicalURL);
@@ -119,11 +135,12 @@
     const sections = Array.isArray(article.sections) ? article.sections : [];
     const images = Array.isArray(article.images) ? article.images : [];
     const total = totalPagesFor(sections);
-    const current = getPageNumber(total);
-    const start = (current - 1) * PAGE_SIZE;
-    const pageSections = sections.slice(start, start + PAGE_SIZE);
-    const isFirst = current === 1;
-    const isLast = current === total;
+    const allPage = isAllPage();
+    const current = allPage ? "all" : getPageNumber(total);
+    const start = allPage ? 0 : (current - 1) * PAGE_SIZE;
+    const pageSections = allPage ? sections : sections.slice(start, start + PAGE_SIZE);
+    const isFirst = allPage || current === 1;
+    const isLast = allPage || current === total;
     const meta = [article.readTime, formatDate(article.date)].filter(Boolean).join(" · ");
     const dek = article.dek || article.description || "";
     const coverHTML = isFirst && article.cover
@@ -132,6 +149,7 @@
 
     const articleBase = `article.html?slug=${encodeURIComponent(article.slug || "")}`;
     const hrefForPage = page => page === 1 ? articleBase : `${articleBase}&page=${page}`;
+    const allHref = `${articleBase}&page=all`;
     const nextHref = hrefForPage(current + 1);
 
     let body = "";
@@ -142,7 +160,7 @@
     pageSections.forEach((section, offset) => {
       const absoluteIndex = start + offset;
       body += sectionHTML(section, absoluteIndex, images);
-      if (offset < pageSections.length - 1) {
+      if (!allPage && offset < pageSections.length - 1) {
         body += '<div class="ad-slot article-ad-slot" aria-label="Advertisement"></div>';
       }
     });
@@ -167,7 +185,7 @@
         ${isFirst && dek ? `<p class="article-dek">${escapeHTML(dek)}</p>` : ""}
         ${isFirst && meta ? `<div class="story-meta">${escapeHTML(meta)}</div>` : ""}
         <div class="article-body">${body}</div>
-        ${paginationHTML(current, total, hrefForPage)}
+        ${paginationHTML(current, total, hrefForPage, allHref)}
         ${tagsHTML}
       </article>
     `;
@@ -180,17 +198,20 @@
     if (!pages.length) return;
 
     const total = pages.length;
-    const current = getPageNumber(total);
+    const allPage = isAllPage();
+    const current = allPage ? "all" : getPageNumber(total);
     pages.forEach((page, index) => {
-      page.hidden = index + 1 !== current;
-      page.classList.toggle("is-active", index + 1 === current);
+      page.hidden = allPage ? false : index + 1 !== current;
+      page.classList.toggle("is-active", !allPage && index + 1 === current);
+      page.classList.toggle("is-all-page", allPage);
     });
 
     const article = document.querySelector(".article");
     const slug = article?.dataset.slug || "";
     const hrefForPage = page => page === 1 ? "?" : `?page=${page}`;
+    const allHref = "?page=all";
     const existing = article?.querySelector(".article-pagination");
-    if (existing) existing.outerHTML = paginationHTML(current, total, hrefForPage);
+    if (existing) existing.outerHTML = paginationHTML(current, total, hrefForPage, allHref);
 
     const continueLinks = article ? article.querySelectorAll(".article-continue") : [];
     continueLinks.forEach(link => {
@@ -199,13 +220,13 @@
 
     const dek = article?.querySelector(".article-dek");
     const meta = article?.querySelector(".story-meta");
-    const showIntro = current === 1;
+    const showIntro = allPage || current === 1;
     if (dek) dek.hidden = !showIntro;
     if (meta) meta.hidden = !showIntro;
 
     const canonical = `${window.location.origin}/articles/${encodeURIComponent(slug)}.html`;
     setPaginationSEO(canonical, current, total);
-    setArticleStructuredData(current === 1 ? canonical : `${canonical}?page=${current}`);
+    setArticleStructuredData(current === "all" ? canonical : current === 1 ? canonical : `${canonical}?page=${current}`);
   }
 
   window.renderArticle = paginatedRenderArticle;
