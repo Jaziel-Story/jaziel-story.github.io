@@ -12,6 +12,19 @@ This file is the project memory for repository changes. Read it before making a 
 - Record every repository change here with its purpose, files, commit, verification, and status.
 - If a previous fix is later reverted or superseded, record that explicitly instead of treating the old fix as still active.
 
+## 2026-09-16 — Admin draft/image regression prevention documentation
+
+### Regression prevention rules
+- **Status:** DOCUMENTED / PREVENTION RULES ACTIVE
+- **Priority:** P1 / prevent recurrence of the Admin draft-loading and image-path/preview regressions reproduced during the Victoria Beckham draft workflow.
+- **Files:** `README.md`.
+- **Change:** Added mandatory rules covering persisted draft payload mapping, synchronization with `state.editor`, event-driven field updates, exact repository image-path verification, section-to-image mapping, cache/deployment verification, and the required Admin end-to-end test sequence.
+- **Reason:** The previous incident showed that a successful Load Draft toast could occur while the editor's internal state remained empty, and that draft image URLs could point to filenames that did not exist even though the correct six image files were present in the repository.
+- **Related fixes already implemented:** `f6be15eb3463fad283b9eab726242135917e6e7e`, `709686df20e9e677c0b0b3a8c67e4289c8b6d973`, `4ae8af49c644ab885e7c7640aa90b8bdd4f94735`, `04a662c1bc23c91934e27d71ce73982fac835707`.
+- **Article Schema:** unchanged and locked.
+- **Verification:** README was re-audited against the current repository rules and recent commits. No application logic was changed by this documentation update.
+- **Deployment:** Documentation changes committed to `main`; no application deployment change was required.
+
 ## 2026-09-15 — Jaziel Story author/byline display
 
 ### Homepage byline
