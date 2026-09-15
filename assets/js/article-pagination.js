@@ -144,7 +144,7 @@
     const meta = [article.readTime, formatDate(article.date)].filter(Boolean).join(" · ");
     const dek = article.dek || article.description || "";
     const coverHTML = isFirst && article.cover
-      ? `<div class="article-cover"><img src="${escapeAttribute(article.cover)}" alt="${escapeAttribute(article.title || "")}" loading="eager" fetchpriority="high" decoding="async"></div>`
+      ? `<div class="article-cover"><img src="${escapeAttribute(article.cover)}" alt="${escapeAttribute(article.title || "")}" loading="eager" fetchpriority="high" decoding="async">` + `</div>`
       : "";
 
     const articleBase = `article.html?slug=${encodeURIComponent(article.slug || "")}`;
@@ -216,6 +216,7 @@
     const continueLinks = article ? article.querySelectorAll(".article-continue") : [];
     continueLinks.forEach(link => {
       link.href = `?page=${Math.min(current + 1, total)}`;
+      link.hidden = allPage;
     });
 
     const dek = article?.querySelector(".article-dek");
