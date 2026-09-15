@@ -39,7 +39,30 @@
   function makeDraft(article) { const now = new Date().toISOString(); return { draftVersion: 1, draftStatus: "draft", draftMeta: { slug: article.slug, createdAt: loaded.draft?.draftMeta?.createdAt || now, updatedAt: now, createdBy: loaded.draft?.draftMeta?.createdBy || "Admin Panel", updatedBy: "Admin Panel" }, article, imageRecommendations: recommendations(article) }; }
   function validateDraft(d) { if (!d || d.draftVersion !== 1 || d.draftStatus !== "draft" || !d.draftMeta?.slug || !d.article || d.article.slug !== d.draftMeta.slug || !d.imageRecommendations) throw new Error("Invalid Draft JSON Contract v1.0."); if (!Array.isArray(d.article.sections) || !Array.isArray(d.article.images) || !Array.isArray(d.article.tags) || !Array.isArray(d.article.relatedArticles)) throw new Error("Draft Article Schema is incomplete."); return d; }
   async function getDraft(s) { try { const d = await request(`/contents/${DRAFT_DIR}/${encodeURIComponent(s)}.json?ref=${encodeURIComponent(BRANCH)}&t=${Date.now()}`); return { sha: d.sha, draft: validateDraft(JSON.parse(b64utf8(d.content))) }; } catch (e) { if (e.status === 404) return null; throw e; } }
-  async function listDrafts() { try { const items = await request(`/contents/${DRAFT_DIR}?ref=${encodeURIComponent(BRANCH)}&t=${Date.now()}`); return Array.isArray(items) ? items.filter(x => x.type === "file" && x.name.endsWith(".json")).map(x => x.name.slice(0, -5)) : []; } catch (e) { if (e.status === 404) return []; throw e; } }
+  async function listDrafts() {
+    try {
+      const items = await request(`/contents/${DRAFT_DIR}?ref=${encodeURIComponent(BRANCH)}&t=${Date.now()}`);
+      const drafts = Array.isArray(items) ? items.filter(x => x.type === "file" && x.name.endsWith(".json")).map(x => x.name.slice(0, -5)) : [];
+      if (!drafts.length) return [];
+      const articles = await request(`/contents/articles.json?ref=${encodeURIComponent(BRANCH)}&t=${Date.now()}`);
+      const parsed = JSON.parse(b64utf8(articles.content));
+      const published = new Set((parsed.articles || []).map(a => a && a.slug).filter(Boolean));
+      const stale = drafts.filter(s => published.has(s));
+      for (const s of stale) {
+        try {
+          const found = await getDraft(s);
+          if (!found) continue;
+          await request(`/contents/${DRAFT_DIR}/${encodeURIComponent(s)}.json`, { method: "DELETE", body: JSON.stringify({ message: `Admin: remove published draft "${s}"`, sha: found.sha, branch: BRANCH }) });
+        } catch (err) {
+          console.warn("Could not remove published draft", s, err);
+        }
+      }
+      return drafts.filter(s => !published.has(s));
+    } catch (e) {
+      if (e.status === 404) return [];
+      throw e;
+    }
+  }
   async function checkDuplicate(s) { const existingDraft = await getDraft(s); if (existingDraft && (!loaded.draft || loaded.slug !== s)) throw new Error(`A GitHub draft already exists for slug “${s}”. Load it before updating it.`); const articles = await request(`/contents/articles.json?ref=${encodeURIComponent(BRANCH)}&t=${Date.now()}`); const parsed = JSON.parse(b64utf8(articles.content)); if ((parsed.articles || []).some(a => a.slug === s)) throw new Error(`This slug is already published: ${s}`); }
   async function uploadSelectedImages(s, article) {
     const coverInput = $("#coverFile");
