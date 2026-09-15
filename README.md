@@ -56,9 +56,61 @@ a maximum of **2 sections per page**. The first page is the default when no
 - `sitemap.xml` contains the homepage, core informational pages, and canonical static article URLs.
 - `.github/workflows/generate-sitemap.yml` rebuilds the sitemap from `articles.json` whenever article data changes.
 - `index.html` has a self-referencing canonical URL and `WebSite` JSON-LD.
-- Static article pages retain canonical/description/OG metadata and now receive `Article` JSON-LD from the pagination helper without changing Article Schema v1.
+- Static article pages receive canonical/description/OG metadata and static `Article` JSON-LD generated from `articles.json`; the pagination helper maintains the active-page structured-data signal at runtime without changing Article Schema v1.
+- Static article Page 1 uses the canonical article URL; Page 2+ use the active `?page=N` URL for canonical/OG/structured-data signals.
 - Dynamic `article.html?slug=...` remains a legacy fallback; the sitemap points only to canonical static article URLs.
 - Search/category query pages are intentionally not listed in the sitemap.
+
+## Verification roadmap — after SEO, pagination SEO, Article JSON-LD, and image optimization
+
+The implementation work for the current SEO/performance milestone is complete. The next step is **verification before adding new features**.
+
+### 13. Live SEO Verification — P0
+
+- Verify a live static article Page 1.
+- Verify Page 2 and Page 3 where available.
+- Confirm canonical URLs match the active page policy.
+- Confirm `og:url` follows the active page URL.
+- Confirm `rel="prev"` / `rel="next"` behavior where applicable.
+- Confirm static `Article` JSON-LD is present in the generated HTML.
+- Confirm runtime pagination does not create duplicate `Article` JSON-LD blocks.
+- Confirm generated static HTML contains the expected SEO metadata without requiring JavaScript for crawler discovery.
+
+### 14. Performance Verification — P1
+
+- Confirm article cover images use eager loading and high fetch priority.
+- Confirm body images remain lazy-loaded and asynchronous.
+- Check for unnecessary image loading or duplicated requests.
+- Check image dimensions/layout stability and identify any remaining CLS risk.
+- Do not change image behavior unless a measurable regression is reproduced.
+
+### 15. Static Generator E2E — P0
+
+- Verify the latest GitHub Actions generator run completes successfully.
+- Verify generated article files are committed to `main`.
+- Verify sitemap regeneration remains synchronized with article generation.
+- Verify GitHub Pages deployment completes successfully.
+- Confirm the live site serves the generated static article after deployment.
+
+### 16. Search / Category SEO Audit — P1
+
+- Inspect `search.html` and `category.html` and their related JavaScript.
+- Confirm query/result pages follow the intended indexability policy.
+- Confirm search/category query URLs are not accidentally added to the sitemap.
+- Check canonical, robots, and metadata behavior for these pages.
+- Do not refactor duplicated code until all listeners and responsibilities are mapped.
+
+### 17. Publishing Safety — P1
+
+- Verify publish → static generation → sitemap → Pages deployment as one safe flow.
+- Verify duplicate-publish protection and recovery behavior.
+- Confirm failed generation cannot be mistaken for a successful publish.
+- Preserve the shared writer concurrency protection.
+- Record any reproduced publishing regression before changing the protected workflow logic.
+
+### Current priority rule
+
+**Do not start the AI Writer work yet.** Complete verification items **13–17** first. AI Writer remains postponed until the SEO, pagination SEO, static Article JSON-LD, performance, generator E2E, search/category SEO, and publishing-safety checks are verified.
 
 ## Workflow push hardening
 
@@ -134,6 +186,17 @@ update that single constant — no other file needs to change.
 commits first. Do not repeat a change that is already marked DONE unless a
 regression is confirmed.
 
+### 2026-09-16 — Verification roadmap recorded after SEO/performance milestone
+
+- **Priority:** P0/P1 / document the next verification-only phase before starting AI Writer work.
+- **Files changed:** `README.md`.
+- **Change:** Recorded verification items 13–17: Live SEO Verification, Performance Verification, Static Generator E2E, Search/Category SEO Audit, and Publishing Safety. Explicitly postponed AI Writer until these checks are completed.
+- **Reason:** SEO, pagination SEO, static Article JSON-LD, and image-loading optimization have been implemented; the repository should be verified before another feature is introduced.
+- **Article Schema:** unchanged and locked.
+- **Verification:** README content was re-audited after the documentation update; no application code or Article Schema was changed.
+- **Deployment:** Documentation commit pushed to `main`; live application verification remains the next phase.
+- **Status:** DOCUMENTED / READY FOR VERIFICATION PHASE.
+
 ### 2026-09-15 — Jaziel Story author/byline display
 
 - **Priority:** P2 / establish a consistent editorial byline for the homepage and article view without changing Article Schema v1.
@@ -191,7 +254,7 @@ regression is confirmed.
 
 - **Priority:** P2 / refine continuation display without changing pagination behavior.
 - **Files changed:** `assets/js/article-pagination.js`.
-- **Change:** Kept the article title visible on every pagination page while hiding dek/read-time/date metadata after Page 1. The cover remains Page-1-only.
+- **Change:** Kept the article title visible on every pagination page while hiding the dek/read-time/date metadata after Page 1. The cover remains Page-1-only.
 - **Reason:** Cleaner Page 2 presentation while retaining article context.
 - **Commits:** `d23190ddec29c1b1cfbd735a3a43ced8a177e137`, `41d9920695782654ac0b7e066544f770a2c8816a`, `67f423b6edb6ffb24e29b8daaab970945cb47e65`.
 - **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
