@@ -12,6 +12,20 @@ This file is the project memory for repository changes. Read it before making a 
 - Record every repository change here with its purpose, files, commit, verification, and status.
 - If a previous fix is later reverted or superseded, record that explicitly instead of treating the old fix as still active.
 
+## 2026-09-18 — Search / Category duplicate initialization fix
+
+### Single runtime owner for Search and Category
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P1 / eliminate duplicate `articles.json` fetches, event listeners, and competing renders without changing the existing Search/Category UI or routing.
+- **Files:** `assets/js/main.js`.
+- **Change:** Removed the Search and Category page initialization calls and their duplicate page-specific implementations from the shared `main.js`. `search-category-fix.js` remains the sole runtime owner for Search and Category behavior on those pages, including its normalization, canonical category resolution, latest-first result sorting, and `popstate` handling.
+- **Reason:** Both `main.js` and `search-category-fix.js` were registering `DOMContentLoaded` handlers and independently fetching `articles.json` on `search.html` and `category.html`. Both also attached Search form listeners, causing duplicate fetch/render work and competing URL/render updates.
+- **Scope:** Runtime ownership cleanup only. Search/Category HTML, CSS, URL format, visible layout, Article Schema v1, homepage category ordering, pagination, ads, publishing flow, sitemap, and Admin Panel were not changed.
+- **Audit result:** `search.html` and `category.html` both load `main.js` followed by `search-category-fix.js`. `main.js` contained its own Search/Category initialization and rendering, while `search-category-fix.js` contained a second complete implementation with stronger normalization and routing handling. The safe consolidation point was to keep the dedicated hardening helper active and remove the competing implementations from `main.js`.
+- **Verification:** Repository README, CHANGELOG, `search.html`, `category.html`, both JavaScript files, and the recent commit history were inspected before the change. The resulting `main.js` was reviewed for balanced structure and preserved shared Home/Article helpers. JavaScript syntax should be verified by the repository's `validate-javascript.yml` workflow after the commit. Live GitHub Pages Search/Category verification remains required.
+- **Commit:** `84e3abc942aefd8cd9d6d8265455678eabf96a4c` (`Remove duplicate search and category initialization`).
+- **Article Schema:** unchanged and locked.
+
 ## 2026-09-18 — Homepage category order follows article recency
 
 ### Dynamic category navigation
@@ -24,7 +38,7 @@ This file is the project memory for repository changes. Read it before making a 
 - **Cache-bust:** `index.html` now loads `home-latest-final.js?v=20260918a` so deployed browsers do not remain on the previous cached homepage loader.
 - **Verification before change:** README and CHANGELOG were inspected first. Current `index.html`, `home-latest-final.js`, `category.html`, `search-category-fix.js`, and recent commits were reviewed. The homepage was confirmed to use `home-latest-final.js` as its dedicated data/render loader, while `body[data-page="home-static"]` prevents `main.js` from initializing the homepage.
 - **Verification:** The changed JavaScript source was reviewed for syntax and the category-order logic uses the existing newest-first sort, including `updatedAt`/`updated` fallbacks when present and `date` otherwise. Live GitHub Pages visual verification is still required.
-- **Commits:** `7a5941dae14b84e18b18fdfd5830f6d3d2681a0d` (`Make homepage categories follow latest articles`), `1541e131c4d9a88400b3b4134dbd3e4c9621049f` (`Cache-bust homepage category ordering`), `PENDING` (this CHANGELOG entry).
+- **Commits:** `7a5941dae14b84e18b18fdfd5830f6d3d2681a0d` (`Make homepage categories follow latest articles`), `1541e131c4d9a88400b3b4134dbd3e4c9621049f` (`Cache-bust homepage category ordering`), `5e4bc022e1305f3d90e9e4ce35dc4e10ffcbeab8` (`Document dynamic homepage category order`).
 - **Article Schema:** unchanged and locked.
 
 ## 2026-09-16 — GA4 Article Analytics foundation
