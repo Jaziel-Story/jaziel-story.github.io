@@ -230,8 +230,19 @@
       if (isRepoImagePath(src)) refs.push({ kind: `body image ${i + 1}`, path: src });
     });
     if (!refs.length) return;
-    const checked = await Promise.all(refs.map(async ref => ({ ...ref, exists: Boolean(await getFile(ref.path)) })));
-    const missing = checked.filter(x => !x.exists);
+
+    // Verify all repository-backed images from one directory listing instead of
+    // issuing one Contents API request per image during Load Draft.
+    const listing = await request(`/contents/${IMAGE_DIR}?ref=${encodeURIComponent(BRANCH)}&t=${Date.now()}`);
+    const available = new Set(
+      Array.isArray(listing)
+        ? listing.filter(x => x?.type === "file").map(x => String(x.path || x.name || "").replace(/^\/+/, ""))
+        : []
+    );
+    const missing = refs.filter(ref => {
+      const cleanPath = String(ref.path).replace(/^\/+/, "").split(/[?#]/, 1)[0];
+      return !available.has(cleanPath);
+    });
     if (missing.length) throw new Error(`Draft image reference missing from GitHub: ${missing.map(x => `${x.kind} (${x.path})`).join(", ")}.`);
   }
   async function applyDraft(d) {
