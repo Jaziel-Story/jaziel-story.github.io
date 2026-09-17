@@ -26,7 +26,6 @@ This file is the project memory for repository changes. Read it before making a 
 - **Scope:** No `views` field or analytics data was added to `articles.json`; Article Schema v1 remains unchanged. Admin Panel analytics reporting is a later phase that can consume GA4 data.
 - **Privacy:** Updated `privacy.html` so the public policy no longer incorrectly states that Jaziel has no analytics.
 - **Verification before change:** Repository search confirmed no existing GA4/Google Analytics implementation. Homepage and dynamic article heads were inspected. Static article generation was inspected and confirmed to load `article-pagination.js`, allowing the analytics loader to cover generated article pages without rewriting the generator workflow.
-- **Google documentation basis:** GA4's standard Google tag sends `page_view` automatically, and Google documents custom events for additional content measurement. citeturn0search0turn0search1
 - **Commits:** `e1349ed7301082d2651baff2a1ceb647eefbd254` (`Add Jaziel GA4 analytics tracking`), `f12b8e778e7b5449afaf26593f46e3f12d8aec1c` (`Load GA4 tracking on homepage`), `bbb45ef35282d02200eb049e2e5b955bb317bd62` (`Load GA4 tracking on dynamic article page`), `faaf165b055795d1c41381aeec9159572d9779c4` (`Load GA4 tracking on static article pages`), `33b7b976c803f1c23627ce82fac0714a1a10177c` (`Update privacy policy for GA4 analytics`), `0350a12d686b2cbfb1e888ddeba462b2dbc5f564` (`Load GA4 tracking on category pages`), `690c3832765e8a36ddd8e6c9f67c9299298b0304` (`Load GA4 tracking on all stories page`).
 - **Article Schema:** unchanged and locked.
 - **Next verification:** Wait for GitHub Pages deployment, then open the live site and verify the GA4 Realtime report receives the visit and the `article_view` event appears when an article is opened.
@@ -111,3 +110,18 @@ This file is the project memory for repository changes. Read it before making a 
 - **Commit:** `f338e8c9c164712879aa740933f4599585cd713e` (`Cache-bust GitHub draft image persistence fix`).
 - **Verification:** Commit diff confirmed the script version changed exactly from `20260915-1` to `20260915-2`.
 - **Deployment:** Repository commit reached `main`.
+
+## 2026-09-18 — Admin draft load timeout regression fix
+
+### GitHub-backed image verification during Load Draft
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P1 / Load Draft must not stall while validating the persisted cover/body image references.
+- **Files:** `assets/js/draft-manager-fix.js`, `admin/index.html`.
+- **Change:** Replaced the per-image GitHub Contents API verification during draft loading with one directory listing of `assets/images/articles/`, then checks every referenced filename locally against that listing. The exact repository path and extension are still verified; binary image content is not downloaded.
+- **Root cause:** The previous loader made one GitHub Contents API request for every repository-backed image. A six-image draft therefore required six concurrent API requests during Load Draft, and one stalled request could keep the whole load pending until the 30-second request timeout shown in the Admin error toast.
+- **Scope:** Targeted change to draft image-reference verification only. Article Schema v1, editor fields, publish flow, preview flow, pagination, generator, sitemap, ads, and AI Writer were not changed.
+- **Verification before change:** README and CHANGELOG were inspected first. The current `draft-manager-fix.js`, `draft-load-ui.js`, `admin/index.html`, and the affected So Delicious draft were inspected. The screenshot reproduced the 30-second GitHub request timeout after selecting the draft. Repository image references in the draft use the expected `assets/images/articles/` paths.
+- **Local verification:** `node --check` passed for the changed `draft-manager-fix.js` source before committing.
+- **Commits:** `4fdfb08a8f0b5eeb56348fdceeecdb2ba0b4cabc` (`Fix draft load image verification timeout`), `5c8054b07557288d56e40ef365682a99883f7ef0` (`Cache-bust draft load image verification fix`).
+- **Article Schema:** unchanged and locked.
+- **Next verification:** Wait for GitHub Pages deployment, hard-refresh the Admin Panel, load the So Delicious draft, and confirm cover/body images and editor fields populate without the 30-second timeout.
