@@ -220,7 +220,7 @@ update that single constant — no other file needs to change.
   Node.js on JavaScript changes.
 - `.github/workflows/ai-writer.yml` — runs on demand, triggered by the Admin
   Panel, to turn raw text into a structured article draft with Gemini.
-- `.github/workflows/generate-sitemap.yml` — regenerates the XML sitemap from the current article list.
+- `.github/workflows/generate-sitemap.yml` — regenerates the XML sitemap from `articles.json`.
 - `.github/workflows/generate-static-articles.yml` — generates canonical static article HTML from `articles.json` and safely writes the generated files back to `main`.
 
 ## Repository Change Log
@@ -229,6 +229,18 @@ update that single constant — no other file needs to change.
 `CHANGELOG.md`. Before making another fix, check these logs and the recent Git
 commits first. Do not repeat a change that is already marked DONE unless a
 regression is confirmed.
+
+### 2026-09-18 — Admin draft load timeout regression verified
+
+- **Priority:** P1 / record the verified root cause and end-to-end resolution so future Admin draft fixes do not repeat the same per-image GitHub request pattern.
+- **Files changed for the fix:** `assets/js/draft-manager-fix.js`, `assets/js/draft-load-ui.js`, `admin/index.html`.
+- **Fix commits:** `4fdfb08a8f0b5eeb56348fdceeecdb2ba0b4cabc`, `5c8054b07557288d56e40ef365682a99883f7ef0`, with the draft/UI architecture updates also preserved in `bdbe9d6385737db41a62d71c30e92b9a8618b06e` and `db646f4d7b218739f32fd54a8734428ac1e81d75`.
+- **Root cause:** Load Draft previously verified each repository-backed image through a separate GitHub Contents API request. With multiple images, one stalled request could keep the entire load pending until the 30-second timeout.
+- **Targeted fix:** Load Draft now uses one directory listing of `assets/images/articles/` and checks referenced filenames locally, while still verifying exact repository paths and extensions. The binary image files are not downloaded during draft verification.
+- **Related protection:** The draft chooser delegates reads/validation to `window.JazielDraftManager`; duplicate draft-read logic was removed from the chooser. The Admin script versions were cache-busted.
+- **Article Schema:** unchanged and locked. Publish, Preview, pagination, generator, sitemap, ads, and AI Writer logic were not changed by this timeout fix.
+- **Live verification:** User confirmed that Load Draft now completes successfully; cover and Body Images 1–5 appeared; Body Image 6 was added for the sixth section; Save Draft, refresh, Load Draft, and Preview all retained the full image set; the article was then successfully published.
+- **Final status:** DONE / VERIFIED BY USER IN LIVE ADMIN PANEL.
 
 ### 2026-09-16 — Admin draft/image regression prevention rules recorded
 
@@ -261,8 +273,6 @@ regression is confirmed.
 - **Article Schema:** unchanged and locked; no `author` field was added to `articles.json`.
 - **Verification:** Repository source was inspected after the edits; the homepage contains the byline in featured/latest/popular cards, and `article.html` contains the bounded byline presentation logic for the article metadata and related cards.
 - **Deployment:** Changes committed to `main`; live browser verification remains pending.
-- **Commits:** `daec9dea81ff6817a8380c35a363bb0e2544c7f6`, `83b65bfc4cb70cb603fd053927cb35eecd1811cf`, `996b898eb7f8edfdb26b258bd2ce4c8a14cfc734`.
-- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION.
 
 ### 2026-09-15 — Documentation reconciliation for previously undocumented Admin draft/image changes
 
