@@ -12,6 +12,21 @@ This file is the project memory for repository changes. Read it before making a 
 - Record every repository change here with its purpose, files, commit, verification, and status.
 - If a previous fix is later reverted or superseded, record that explicitly instead of treating the old fix as still active.
 
+## 2026-09-18 — Homepage category order follows article recency
+
+### Dynamic category navigation
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P2 / keep `Latest` and `Popular` fixed while automatically ordering the remaining category links by the recency of their newest article.
+- **Files:** `assets/js/home-latest-final.js`, `index.html`.
+- **Change:** The homepage category navigation now keeps `Latest` first and `Popular` second, then derives unique category links from the already newest-first article list. The first occurrence of each category determines its position, so a newly published or recently updated article moves its category toward the front automatically. `Latest` and `Popular` are excluded from the dynamic category list to avoid duplicates.
+- **Reason:** The previous homepage category navigation was hard-coded (`Amazing`, `World`, `Entertainment`, `Technology`, `People`) and could become stale when new article categories were added or when the newest article belonged to a different category.
+- **Scope:** Targeted homepage navigation change only. Article Schema v1, category page routing/filtering, search, pagination, ads, publishing flow, sitemap, and Admin Panel were not changed.
+- **Cache-bust:** `index.html` now loads `home-latest-final.js?v=20260918a` so deployed browsers do not remain on the previous cached homepage loader.
+- **Verification before change:** README and CHANGELOG were inspected first. Current `index.html`, `home-latest-final.js`, `category.html`, `search-category-fix.js`, and recent commits were reviewed. The homepage was confirmed to use `home-latest-final.js` as its dedicated data/render loader, while `body[data-page="home-static"]` prevents `main.js` from initializing the homepage.
+- **Verification:** The changed JavaScript source was reviewed for syntax and the category-order logic uses the existing newest-first sort, including `updatedAt`/`updated` fallbacks when present and `date` otherwise. Live GitHub Pages visual verification is still required.
+- **Commits:** `7a5941dae14b84e18b18fdfd5830f6d3d2681a0d` (`Make homepage categories follow latest articles`), `1541e131c4d9a88400b3b4134dbd3e4c9621049f` (`Cache-bust homepage category ordering`), `PENDING` (this CHANGELOG entry).
+- **Article Schema:** unchanged and locked.
+
 ## 2026-09-16 — GA4 Article Analytics foundation
 
 ### GA4 tracking and article-view events
@@ -40,7 +55,7 @@ This file is the project memory for repository changes. Read it before making a 
 - **Reason:** On All Page, the pagination helper correctly set the non-final `Continue Reading` links to `hidden`, but the stylesheet's `display: flex` rule overrode that state. This caused a `Continue Reading` button to remain visible between Body Image 2 and the next section.
 - **Root cause:** CSS specificity/cascade conflict between the `.article-continue` display rule and the browser's `hidden` presentation behavior.
 - **Scope:** CSS-only targeted fix. Article Schema v1, pagination page size, section/image mapping, generated article HTML, and All Page rendering logic were not changed.
-- **Commit:** `e08a20cb3d69b55e1809c1f32562974b9f1ee87c` (`Fix All Page Continue Reading visibility`).
+- **Commit:** `e08a20cb3d69b55e180c9f32562974b9f1ee87c` (`Fix All Page Continue Reading visibility`).
 - **Verification before change:** Current `assets/js/article-pagination.js` was inspected and confirmed to set `link.hidden = allPage`; the generated Victoria Beckham article HTML was inspected and confirmed to contain the expected `article-continue` elements inside numbered page sections; `assets/css/article-pagination.css` was inspected and confirmed to define `display: flex` without a matching hidden-state override.
 - **Verification after change:** Repository CSS update committed successfully. Live GitHub Pages verification is required before marking DONE.
 - **Article Schema:** unchanged and locked.
