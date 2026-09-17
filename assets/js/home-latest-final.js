@@ -17,6 +17,10 @@
     return `articles/${encodeURIComponent(article.slug || "")}.html`;
   }
 
+  function categoryUrl(category) {
+    return `category.html?category=${encodeURIComponent(category)}`;
+  }
+
   function newest(articles) {
     return articles
       .map((article, index) => ({ article, index }))
@@ -28,10 +32,35 @@
       .map(item => item.article);
   }
 
+  function renderCategoryNav(sorted) {
+    const nav = document.querySelector(".category-nav");
+    if (!nav) return;
+
+    const seen = new Set();
+    const categories = [];
+    const reserved = new Set(["latest", "popular"]);
+
+    sorted.forEach(article => {
+      const category = String(article.category || "").trim();
+      const key = category.toLowerCase();
+      if (!category || reserved.has(key) || seen.has(key)) return;
+      seen.add(key);
+      categories.push(category);
+    });
+
+    nav.innerHTML = [
+      '<a class="category-chip active" href="#latest">Latest</a>',
+      '<a class="category-chip" href="#popular">Popular</a>',
+      ...categories.map(category => `<a class="category-chip" href="${esc(categoryUrl(category))}">${esc(category)}</a>`)
+    ].join("");
+  }
+
   function render(articles) {
     const sorted = newest(articles);
     const latest = sorted[0];
     if (!latest) return;
+
+    renderCategoryNav(sorted);
 
     const card = document.querySelector(".featured-card");
     const list = document.querySelector(".story-list");
