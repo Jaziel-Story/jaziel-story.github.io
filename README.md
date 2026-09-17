@@ -31,6 +31,12 @@ The homepage intentionally uses one dedicated data/render loader so
 `main.js` does not initialize the same homepage twice. Article Schema v1
 remains unchanged and locked.
 
+Search and Category pages also have one dedicated runtime owner:
+`search-category-fix.js`. The shared `main.js` keeps only the common helpers
+needed by other pages and does not initialize Search or Category. This prevents
+duplicate `articles.json` fetches, event listeners, and competing renders while
+preserving the existing Search/Category UI and URL structure.
+
 ## Article pagination
 
 Articles now use a UI-only pagination layer without changing Article Schema v1.
@@ -98,7 +104,7 @@ The implementation work for the current SEO/performance milestone is complete. T
 - Confirm query/result pages follow the intended indexability policy.
 - Confirm search/category query URLs are not accidentally added to the sitemap.
 - Check canonical, robots, and metadata behavior for these pages.
-- Do not refactor duplicated code until all listeners and responsibilities are mapped.
+- Confirm Search and Category have a single runtime owner and do not register duplicate fetches/listeners/renders.
 
 ### 17. Publishing Safety — P1
 
@@ -230,39 +236,74 @@ update that single constant — no other file needs to change.
 commits first. Do not repeat a change that is already marked DONE unless a
 regression is confirmed.
 
-### 2026-09-18 — Admin draft load timeout regression verified
+### 2026-09-18 — Search / Category duplicate initialization fix
 
-- **Priority:** P1 / record the verified root cause and end-to-end resolution so future Admin draft fixes do not repeat the same per-image GitHub request pattern.
-- **Files changed for the fix:** `assets/js/draft-manager-fix.js`, `assets/js/draft-load-ui.js`, `admin/index.html`.
-- **Fix commits:** `4fdfb08a8f0b5eeb56348fdceeecdb2ba0b4cabc`, `5c8054b07557288d56e40ef365682a99883f7ef0`, with the draft/UI architecture updates also preserved in `bdbe9d6385737db41a62d71c30e92b9a8618b06e` and `db646f4d7b218739f32fd54a8734428ac1e81d75`.
-- **Root cause:** Load Draft previously verified each repository-backed image through a separate GitHub Contents API request. With multiple images, one stalled request could keep the entire load pending until the 30-second timeout.
-- **Targeted fix:** Load Draft now uses one directory listing of `assets/images/articles/` and checks referenced filenames locally, while still verifying exact repository paths and extensions. The binary image files are not downloaded during draft verification.
-- **Related protection:** The draft chooser delegates reads/validation to `window.JazielDraftManager`; duplicate draft-read logic was removed from the chooser. The Admin script versions were cache-busted.
-- **Article Schema:** unchanged and locked. Publish, Preview, pagination, generator, sitemap, ads, and AI Writer logic were not changed by this timeout fix.
-- **Live verification:** User confirmed that Load Draft now completes successfully; cover and Body Images 1–5 appeared; Body Image 6 was added for the sixth section; Save Draft, refresh, Load Draft, and Preview all retained the full image set; the article was then successfully published.
-- **Final status:** DONE / VERIFIED BY USER IN LIVE ADMIN PANEL.
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P1 / eliminate duplicate `articles.json` fetches, event listeners, and competing renders without changing the existing Search/Category UI or routing.
+- **Files changed:** `assets/js/main.js`.
+- **Change:** Removed the Search and Category page initialization calls and their duplicate page-specific implementations from the shared `main.js`. `search-category-fix.js` remains the sole runtime owner for Search and Category behavior on those pages, including its normalization, canonical category resolution, latest-first result sorting, and `popstate` handling.
+- **Reason:** Both `main.js` and `search-category-fix.js` were registering `DOMContentLoaded` handlers and independently fetching `articles.json` on `search.html` and `category.html`. Both also attached Search form listeners, causing duplicate fetch/render work and competing URL/render updates.
+- **Scope:** Runtime ownership cleanup only. Search/Category HTML, CSS, URL format, visible layout, Article Schema v1, homepage category ordering, pagination, ads, publishing flow, sitemap, and Admin Panel were not changed.
+- **Audit result:** `search.html` and `category.html` both load `main.js` followed by `search-category-fix.js`. `main.js` contained its own Search/Category initialization and rendering, while `search-category-fix.js` contained a second complete implementation with stronger normalization and routing handling. The safe consolidation point was to keep the dedicated hardening helper active and remove the competing implementations from `main.js`.
+- **Verification before change:** README, CHANGELOG, `search.html`, `category.html`, both JavaScript files, and the recent commit history were inspected. The resulting `main.js` was reviewed for preserved shared Home/Article helpers and the dedicated Search/Category ownership comment. The repository's `validate-javascript.yml` workflow should verify syntax on the changed JavaScript. Live GitHub Pages Search/Category verification remains required.
+- **Commit:** `84e3abc942aefd8cd9d6d8265455678eabf96a4c` (`Remove duplicate search and category initialization`).
+- **Article Schema:** unchanged and locked.
 
-### 2026-09-16 — Admin draft/image regression prevention rules recorded
+### 2026-09-18 — Homepage category order follows article recency
 
+- **Priority:** P2 / keep `Latest` and `Popular` fixed while automatically ordering the remaining category links by the recency of their newest article.
+- **Files changed:** `assets/js/home-latest-final.js`, `index.html`.
+- **Change:** The homepage category navigation now keeps `Latest` first and `Popular` second, then derives unique category links from the already newest-first article list. The first occurrence of each category determines its position, so a newly published or recently updated article moves its category toward the front automatically. `Latest` and `Popular` are excluded from the dynamic category list to avoid duplicates.
+- **Reason:** The previous homepage category navigation was hard-coded (`Amazing`, `World`, `Entertainment`, `Technology`, `People`) and could become stale when new article categories were added or when the newest article belonged to a different category.
+- **Scope:** Targeted homepage navigation change only. Article Schema v1, category page routing/filtering, search, pagination, ads, publishing flow, sitemap, and Admin Panel were not changed.
+- **Cache-bust:** `index.html` now loads `home-latest-final.js?v=20260918a` so deployed browsers do not remain on the previous cached homepage loader.
+- **Verification before change:** README and CHANGELOG were inspected first. Current `index.html`, `home-latest-final.js`, `category.html`, `search-category-fix.js`, and recent commits were reviewed. The homepage was confirmed to use `home-latest-final.js` as its dedicated data/render loader, while `body[data-page="home-static"]` prevents `main.js` from initializing the homepage.
+- **Verification:** The changed JavaScript source was reviewed for syntax and the category-order logic uses the existing newest-first sort, including `updatedAt`/`updated` fallbacks when present and `date` otherwise. Live GitHub Pages visual verification is still required.
+- **Commits:** `7a5941dae14b84e18b18fdfd5830f6d3d2681a0d` (`Make homepage categories follow latest articles`), `1541e131c4d9a88400b3b4134dbd3e4c9621049f` (`Cache-bust homepage category ordering`), `5e4bc022e1305f3d90e9e4ce35dc4e10ffcbeab8` (`Document dynamic homepage category order`).
+- **Article Schema:** unchanged and locked.
+
+### 2026-09-16 — GA4 Article Analytics foundation
+
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P1 / establish reliable traffic and article-read measurement before building the Admin Analytics dashboard.
+- **GA4 Property:** `Jaziel Story`.
+- **Web stream:** `Jaziel Story Website` — `https://jaziel-story.github.io`.
+- **Measurement ID:** `G-HC6NTTN5KP`.
+- **Files:** `assets/js/jaziel-analytics.js`, `index.html`, `article.html`, `assets/js/article-pagination.js`, `category.html`, `all.html`, `privacy.html`.
+- **Change:** Added a shared GA4 loader and an `article_view` event. Article events record the article slug, article title, pagination page, and whether the view is paginated or All Page. Static generated article pages load the same analytics module through `article-pagination.js`, so future generated pages inherit tracking without manually editing every generated HTML file.
+- **Reason:** Jaziel is a static GitHub Pages site, so analytics must remain separate from Article Schema v1 while still identifying article-level readership.
+- **Scope:** No `views` field or analytics data was added to `articles.json`; Article Schema v1 remains unchanged. Admin Panel analytics reporting is a later phase that can consume GA4 data.
+- **Privacy:** Updated `privacy.html` so the public policy no longer incorrectly states that Jaziel has no analytics.
+- **Verification before change:** Repository search confirmed no existing GA4/Google Analytics implementation. Homepage and dynamic article heads were inspected. Static article generation was inspected and confirmed to load `article-pagination.js`, allowing the analytics loader to cover generated article pages without rewriting the generator workflow.
+- **Commits:** `e1349ed7301082d2651baff2a1ceb647eefbd254` (`Add Jaziel GA4 analytics tracking`), `f12b8e778e7b5449afaf26593f46e3f12d8aec1c` (`Load GA4 tracking on homepage`), `bbb45ef35282d02200eb049e2e5b955bb317bd62` (`Load GA4 tracking on dynamic article page`), `faaf165b055795d1c41381aeec9159572d9779c4` (`Load GA4 tracking on static article pages`), `33b7b976c803f1c23627ce82fac0714a1a10177c` (`Update privacy policy for GA4 analytics`), `0350a12d686b2cbfb1e888ddeba462b2dbc5f564` (`Load GA4 tracking on category pages`), `690c3832765e8a36ddd8e6c9f67c9299298b0304` (`Load GA4 tracking on all stories page`).
+- **Article Schema:** unchanged and locked.
+- **Next verification:** Wait for GitHub Pages deployment, then open the live site and verify the GA4 Realtime report receives the visit and the `article_view` event appears when an article is opened.
+
+### 2026-09-16 — All Page Continue Reading visibility fix
+
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Priority:** P1 / the static All Page must hide all `Continue Reading` controls when all article sections are displayed together.
+- **Files changed:** `assets/css/article-pagination.css`.
+- **Change:** Added `.article-continue[hidden] { display: none; }` so the HTML `hidden` state applied by `article-pagination.js` cannot be overridden by the base `.article-continue { display: flex; }` rule.
+- **Reason:** On All Page, the pagination helper correctly set the non-final `Continue Reading` links to `hidden`, but the stylesheet's `display: flex` rule overrode that state. This caused a `Continue Reading` button to remain visible between Body Image 2 and the next section.
+- **Root cause:** CSS specificity/cascade conflict between the `.article-continue` display rule and the browser's `hidden` presentation behavior.
+- **Scope:** CSS-only targeted fix. Article Schema v1, pagination page size, section/image mapping, generated article HTML, and All Page rendering logic were not changed.
+- **Commit:** `e08a20cb3d69b55e180c9f32562974b9f1ee87c` (`Fix All Page Continue Reading visibility`).
+- **Verification before change:** Current `assets/js/article-pagination.js` was inspected and confirmed to set `link.hidden = allPage`; the generated Victoria Beckham article HTML was inspected and confirmed to contain the expected `article-continue` elements inside numbered page sections; `assets/css/article-pagination.css` was inspected and confirmed to define `display: flex` without a matching hidden-state override.
+- **Verification after change:** Repository CSS update committed successfully. Live GitHub Pages verification is required before marking DONE.
+- **Article Schema:** unchanged and locked.
+
+### 2026-09-16 — Admin draft/image regression prevention documentation
+
+- **Status:** DOCUMENTED / PREVENTION RULES ACTIVE
 - **Priority:** P1 / prevent recurrence of the Admin draft-loading and image-path/preview regressions reproduced during the Victoria Beckham draft workflow.
 - **Files changed:** `README.md`.
 - **Change:** Added mandatory regression-prevention rules covering persisted draft payload mapping, synchronization with `state.editor`, event-driven field updates, exact repository image-path verification, section-to-image mapping, cache/deployment verification, and the required Admin end-to-end test sequence.
 - **Reason:** The previous incident showed that a successful Load Draft toast could occur while the editor's internal state remained empty, and that draft image URLs could point to filenames that did not exist even though the correct six image files were present in the repository.
 - **Related fixes already implemented:** `f6be15eb3463fad283b9eab726242135917e6e7e`, `709686df20e9e677c0b0b3a8c67e4289c8b6d973`, `4ae8af49c644ab885e7c7640aa90b8bdd4f94735`, `04a662c1bc23c91934e27d71ce73982fac835707`.
 - **Article Schema:** unchanged and locked.
-- **Verification:** README was re-audited against the current repository rules and recent commits before this documentation update. No application logic was changed by this documentation commit.
+- **Verification:** README was re-audited against the current repository rules and recent commits. No application logic was changed by this documentation update.
 - **Status:** DOCUMENTED / PREVENTION RULES ACTIVE.
-
-### 2026-09-16 — Verification roadmap recorded after SEO/performance milestone
-
-- **Priority:** P0/P1 / document the next verification-only phase before starting AI Writer work.
-- **Files changed:** `README.md`.
-- **Change:** Recorded verification items 13–17: Live SEO Verification, Performance Verification, Static Generator E2E, Search/Category SEO Audit, and Publishing Safety. Explicitly postponed AI Writer until these checks are completed.
-- **Reason:** SEO, pagination SEO, static Article JSON-LD, and image-loading optimization have been implemented; the repository should be verified before another feature is introduced.
-- **Article Schema:** unchanged and locked.
-- **Verification:** README content was re-audited after the documentation update; no application code or Article Schema was changed.
-- **Deployment:** Documentation commit pushed to `main`; live application verification remains the next phase.
-- **Status:** DOCUMENTED / READY FOR VERIFICATION PHASE.
 
 ### 2026-09-15 — Jaziel Story author/byline display
 
@@ -479,8 +520,8 @@ Every repository change must be recorded in this file and summarized in `README.
 - **Reason:** AI request/result JSON files are repository-backed in the current static workflow. In a public repository, their contents can be publicly readable. Moving this transport would be a separate architecture change.
 
 ### 🟡 Search/category code duplication
-- **Status:** NEEDS FURTHER AUDIT
-- **Reason:** Search/category behavior appears across multiple JavaScript files. Refactor only after mapping all event listeners and responsibilities.
+- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Result:** Search and Category now have a single runtime owner in `search-category-fix.js`; the competing page initialization and duplicate implementations were removed from `main.js`. Live Search/Category verification remains required.
 
 ### 🟡 Draft / Edit Article E2E
 - **Status:** NEXT FOCUSED TEST
