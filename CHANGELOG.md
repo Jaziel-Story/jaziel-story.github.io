@@ -114,7 +114,7 @@ This file is the project memory for repository changes. Read it before making a 
 ## 2026-09-18 — Admin draft load timeout regression fix
 
 ### GitHub-backed image verification during Load Draft
-- **Status:** IMPLEMENTED / NEEDS LIVE VERIFICATION
+- **Status:** VERIFIED LIVE / DONE
 - **Priority:** P1 / Load Draft must not stall while validating the persisted cover/body image references.
 - **Files:** `assets/js/draft-manager-fix.js`, `admin/index.html`.
 - **Change:** Replaced the per-image GitHub Contents API verification during draft loading with one directory listing of `assets/images/articles/`, then checks every referenced filename locally against that listing. The exact repository path and extension are still verified; binary image content is not downloaded.
@@ -124,4 +124,5 @@ This file is the project memory for repository changes. Read it before making a 
 - **Local verification:** `node --check` passed for the changed `draft-manager-fix.js` source before committing.
 - **Commits:** `4fdfb08a8f0b5eeb56348fdceeecdb2ba0b4cabc` (`Fix draft load image verification timeout`), `5c8054b07557288d56e40ef365682a99883f7ef0` (`Cache-bust draft load image verification fix`).
 - **Article Schema:** unchanged and locked.
-- **Next verification:** Wait for GitHub Pages deployment, hard-refresh the Admin Panel, load the So Delicious draft, and confirm cover/body images and editor fields populate without the 30-second timeout.
+- **Live end-to-end verification:** User successfully loaded the So Delicious draft after deployment without the 30-second timeout; cover and Body Images 1–5 appeared; Body Image 6 was then added for the sixth section; the draft was saved, refreshed, loaded again, and previewed successfully with the full image set; the article was then published successfully.
+- **Final status:** DONE / VERIFIED BY USER IN LIVE ADMIN PANEL.
