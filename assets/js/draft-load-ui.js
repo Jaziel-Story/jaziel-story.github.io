@@ -1,38 +1,77 @@
-/* JAZIEL ADMIN — Clickable Draft Loader v1 */
+/* JAZIEL ADMIN — Draft chooser UI v2
+   This file owns only the clickable Load Draft chooser.
+   All draft reads, validation, state synchronization, and image verification
+   are delegated to window.JazielDraftManager.
+*/
 (() => {
   "use strict";
-  const REPO="Jaziel-Story/jaziel-story.github.io",BRANCH="main",DIR="admin/drafts",SK="jaziel_admin_settings_v1",TK="jaziel_admin_token_v1";
-  const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
-  const settings=()=>{try{return{owner:REPO.split("/")[0],repo:REPO.split("/")[1],branch:BRANCH,...JSON.parse(localStorage.getItem(SK)||"{}")}}catch{return{owner:REPO.split("/")[0],repo:REPO.split("/")[1],branch:BRANCH}}};
-  const token=()=>{try{return sessionStorage.getItem(TK)||""}catch{return""}};
-  const api=p=>{const s=settings();return`https://api.github.com/repos/${encodeURIComponent(s.owner)}/${encodeURIComponent(s.repo)}${p}`};
-  const b64=s=>{const x=atob(String(s||"").replace(/\n/g,""));return new TextDecoder().decode(Uint8Array.from(x,c=>c.charCodeAt(0)))};
-  const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#039;");
-  const toast=(message,type="info")=>{const root=$("#toastRoot");if(!root)return;const el=document.createElement("div");el.className=`toast${type==="error"?" toast-error":type==="success"?" toast-success":""}`;el.textContent=message;root.appendChild(el);setTimeout(()=>el.remove(),5000)};
-  async function get(p){const h={Accept:"application/vnd.github+json"},t=token();if(t)h.Authorization=`Bearer ${t}`;const r=await fetch(api(p),{headers:h});if(!r.ok)throw new Error(`GitHub ${r.status}: ${r.statusText}`);return r.json()}
-  async function draft(slug){const x=await get(`/contents/${DIR}/${encodeURIComponent(slug)}.json?ref=${BRANCH}&t=${Date.now()}`);return{sha:x.sha,draft:JSON.parse(b64(x.content))}}
-  async function drafts(){const x=await get(`/contents/${DIR}?ref=${BRANCH}&t=${Date.now()}`);const names=(Array.isArray(x)?x:[]).filter(x=>x.type==="file"&&x.name.endsWith(".json")).map(x=>x.name.slice(0,-5));const af=await get(`/contents/articles.json?ref=${BRANCH}&t=${Date.now()}`),a=JSON.parse(b64(af.content)),pub=new Set((a.articles||[]).map(x=>x&&x.slug).filter(Boolean));const out=[];for(const s of names.filter(s=>!pub.has(s))){try{const d=await draft(s),x=d.draft.article||{};out.push({slug:s,title:x.title||s,category:x.category||"Draft",readTime:x.readTime||"",updatedAt:d.draft.draftMeta?.updatedAt||""})}catch(e){console.warn(e)}}return out.sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))}
-  function setv(s,v){const e=$(s);if(!e)return;e.value=v??"";}
-  function syncInput(s){const e=$(s);if(e)e.dispatchEvent(new Event("input",{bubbles:true}))}
-  async function count(sel,btn,n){for(let i=$$(sel).length;i<n;i++){$(btn)?.click();await new Promise(r=>setTimeout(r,0))}}
-  async function apply(a){
-    const m={"#inTitle":a.title,"#inSlug":a.slug,"#inCategory":a.category,"#inDate":a.date,"#inReadTime":a.readTime,"#inDescription":a.description,"#inDek":a.dek,"#inIntro":a.intro,"#inClosing":a.closing,"#inVerseText":a.bibleVerse?.text,"#inVerseRef":a.bibleVerse?.reference,"#inCoverUrl":a.cover,"#inSeoTitle":a.seo?.title,"#inSeoDesc":a.seo?.description,"#inOgTitle":a.og?.title,"#inOgDesc":a.og?.description,"#inOgImage":a.og?.image};
-    Object.entries(m).forEach(([s,v])=>setv(s,v));
-    Object.keys(m).forEach(syncInput);
-    const f=$("#inFeatured");if(f){f.checked=Boolean(a.featured);f.dispatchEvent(new Event("change",{bubbles:true}))}
-    await count("[data-section-heading]","#btnAddSection",Math.max(1,(a.sections||[]).length));
-    $$("[data-section-heading]").slice((a.sections||[]).length).forEach(e=>e.closest(".repeat-item")?.querySelector("[data-remove-section]")?.click());
-    (a.sections||[]).forEach((s,i)=>{setv(`[data-section-heading=\"${i}\"]`,s.heading);setv(`[data-section-paragraphs=\"${i}\"]`,(s.paragraphs||[]).join("\n"));syncInput(`[data-section-heading=\"${i}\"]`);syncInput(`[data-section-paragraphs=\"${i}\"]`)});
-    await count("#bodyImagesList [data-image-url]","#btnAddImage",(a.images||[]).length);
-    $$("#bodyImagesList .repeat-item").slice((a.images||[]).length).forEach(e=>e.querySelector("[data-remove-image]")?.click());
-    (a.images||[]).forEach((x,i)=>{setv(`#bodyImagesList [data-image-url=\"${i}\"]`,x.src||"");setv(`#bodyImagesList [data-image-alt=\"${i}\"]`,x.alt||"");setv(`#bodyImagesList [data-image-caption=\"${i}\"]`,x.caption||"");syncInput(`#bodyImagesList [data-image-url=\"${i}\"]`);syncInput(`#bodyImagesList [data-image-alt=\"${i}\"]`);syncInput(`#bodyImagesList [data-image-caption=\"${i}\"]`)});
-    window.__jazielDraftRelated=a.relatedArticles||[];
-    const ti=$("#tagInput");
-    if(ti){$$("#tagsRow .tag-pill button[data-remove-tag]").forEach(b=>b.click());(a.tags||[]).forEach(t=>{ti.value=t;ti.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true}))})}
+  const $ = (s, r = document) => r.querySelector(s);
+  const toast = (message, type = "info") => {
+    const root = $("#toastRoot");
+    if (!root) return;
+    const el = document.createElement("div");
+    el.className = `toast${type === "error" ? " toast-error" : type === "success" ? " toast-success" : ""}`;
+    el.textContent = message;
+    root.appendChild(el);
+    setTimeout(() => el.remove(), 5000);
+  };
+  const esc = value => String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
+  function close() { $("#jazielDraftChooser")?.remove(); }
+  function styles() {
+    if ($("#jazielDraftChooserStyles")) return;
+    const s = document.createElement("style");
+    s.id = "jazielDraftChooserStyles";
+    s.textContent = `#jazielDraftChooser{z-index:95}.jdc-box{max-width:720px!important}.jdc-title{margin:0 0 5px;font-size:1.15rem}.jdc-sub{margin:0 0 16px;color:var(--muted);font-size:.82rem}.jdc-list{display:flex;flex-direction:column;gap:8px}.jdc-card{display:block;width:100%;text-align:left;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);cursor:pointer;font:inherit}.jdc-card:hover{background:var(--bg);border-color:var(--text)}.jdc-title2{font-weight:700;line-height:1.35}.jdc-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px;color:var(--muted);font-size:.74rem}.jdc-slug{margin-top:5px;color:var(--muted);font-size:.7rem;word-break:break-all}.jdc-close{margin-top:14px;width:100%;justify-content:center}`;
+    document.head.appendChild(s);
   }
-  function close(){document.getElementById("jazielDraftChooser")?.remove()}
-  function styles(){if($("#jazielDraftChooserStyles"))return;const s=document.createElement("style");s.id="jazielDraftChooserStyles";s.textContent=`#jazielDraftChooser{z-index:95}.jdc-box{max-width:720px!important}.jdc-title{margin:0 0 5px;font-size:1.15rem}.jdc-sub{margin:0 0 16px;color:var(--muted);font-size:.82rem}.jdc-list{display:flex;flex-direction:column;gap:8px}.jdc-card{display:block;width:100%;text-align:left;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);cursor:pointer;font:inherit}.jdc-card:hover{background:var(--bg);border-color:var(--text)}.jdc-title2{font-weight:700;line-height:1.35}.jdc-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px;color:var(--muted);font-size:.74rem}.jdc-slug{margin-top:5px;color:var(--muted);font-size:.7rem;word-break:break-all}.jdc-close{margin-top:14px;width:100%;justify-content:center}`;document.head.appendChild(s)}
-  async function chooser(){if(!token()){toast("A GitHub token with Contents read access is required to load drafts.","error");return}styles();close();const o=document.createElement("div");o.id="jazielDraftChooser";o.className="modal-overlay";o.innerHTML=`<div class="modal-box jdc-box"><h3 class="jdc-title">Load Draft</h3><p class="jdc-sub">Choose an article to load it directly into the editor.</p><div class="jdc-list"><div class="jdc-sub">Loading drafts…</div></div><button class="btn btn-ghost jdc-close" type="button">Cancel</button></div>`;document.body.appendChild(o);o.querySelector(".jdc-close").onclick=close;try{const ds=await drafts(),list=o.querySelector(".jdc-list");if(!o.isConnected)return;if(!ds.length){list.innerHTML='<div class="jdc-sub">No unpublished drafts found.</div>';return}list.innerHTML="";ds.forEach(d=>{const b=document.createElement("button");b.type="button";b.className="jdc-card";b.innerHTML=`<div class="jdc-title2">${esc(d.title)}</div><div class="jdc-meta"><span>${esc(d.category)}</span>${d.readTime?`<span>•</span><span>${esc(d.readTime)}</span>`:""}</div><div class="jdc-slug">${esc(d.slug)}</div>`;b.onclick=async()=>{b.disabled=true;try{const x=await draft(d.slug);await apply(x.draft.article||x.draft);close();toast(`Draft loaded: ${d.title}`,"success")}catch(e){console.error(e);toast(e.message||String(e),"error");b.disabled=false}};list.appendChild(b)});list.querySelector("button")?.focus()}catch(e){close();toast(e.message||String(e),"error")}}
-  window.addEventListener("click",e=>{const b=e.target.closest?.("#btnLoadDraft");if(!b)return;e.preventDefault();e.stopImmediatePropagation();chooser()},true);
-  window.addEventListener("keydown",e=>{if(e.key==="Escape")close()});
+  async function chooser() {
+    const manager = window.JazielDraftManager;
+    if (!manager) { toast("Draft manager is not ready. Refresh the Admin Panel and try again.", "error"); return; }
+    styles();
+    close();
+    const o = document.createElement("div");
+    o.id = "jazielDraftChooser";
+    o.className = "modal-overlay";
+    o.innerHTML = `<div class="modal-box jdc-box"><h3 class="jdc-title">Load Draft</h3><p class="jdc-sub">Choose an article to load it directly into the editor.</p><div class="jdc-list"><div class="jdc-sub">Loading drafts…</div></div><button class="btn btn-ghost jdc-close" type="button">Cancel</button></div>`;
+    document.body.appendChild(o);
+    o.querySelector(".jdc-close").onclick = close;
+    try {
+      const drafts = await manager.listDrafts();
+      const list = o.querySelector(".jdc-list");
+      if (!o.isConnected) return;
+      if (!drafts.length) { list.innerHTML = '<div class="jdc-sub">No GitHub drafts found.</div>'; return; }
+      list.innerHTML = "";
+      drafts.forEach(d => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "jdc-card";
+        b.innerHTML = `<div class="jdc-title2">${esc(d.title)}</div><div class="jdc-meta"><span>${esc(d.category)}</span>${d.readTime ? `<span>•</span><span>${esc(d.readTime)}</span>` : ""}</div><div class="jdc-slug">${esc(d.slug)}</div>`;
+        b.onclick = async () => {
+          b.disabled = true;
+          try {
+            await manager.loadBySlug(d.slug);
+            close();
+          } catch (e) {
+            console.error(e);
+            toast(e.message || String(e), "error");
+            b.disabled = false;
+          }
+        };
+        list.appendChild(b);
+      });
+      list.querySelector("button")?.focus();
+    } catch (e) {
+      close();
+      console.error(e);
+      toast(e.message || String(e), "error");
+    }
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest?.("#btnLoadDraft");
+    if (!b) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    chooser();
+  }, true);
+  window.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
 })();
