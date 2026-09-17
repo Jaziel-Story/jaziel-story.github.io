@@ -14,8 +14,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (page === "home") initHomePage();
   else if (page === "article") initArticlePage();
-  else if (page === "search") initSearchPage();
-  else if (page === "category") initCategoryPage();
 });
 
 /* =========================================================
@@ -117,7 +115,7 @@ function renderFeatured(card, article) {
 
 /* =========================================================
    Shared story list / card rendering
-   (used by home, search, category and related stories)
+   (used by home and related stories)
    ========================================================= */
 
 function renderStoryList(container, articles, emptyMessage = "No stories to show yet.") {
@@ -397,147 +395,13 @@ function setMeta(selector, attr, value) {
 }
 
 /* =========================================================
-   Search page
+   Search/category page ownership
+   =========================================================
+   Search and Category are intentionally initialized only by
+   search-category-fix.js. Keeping their legacy implementations
+   out of the DOMContentLoaded path prevents duplicate fetches,
+   listeners, and competing renders without changing the page UI.
    ========================================================= */
-
-async function initSearchPage() {
-  const form = document.getElementById("search-form");
-  const input = document.getElementById("search-input");
-  const status = document.getElementById("search-status");
-  const results = document.getElementById("search-results");
-
-  let articles = [];
-
-  try {
-    articles = await getArticles();
-  } catch (error) {
-    console.warn("Jaziel:", error);
-    renderMessage(status, "Stories couldn't be loaded right now. Please try again later.");
-    return;
-  }
-
-  const runSearch = query => {
-    if (input) input.value = query;
-
-    if (!query) {
-      renderMessage(status, "Type something to search Jaziel stories.");
-      renderStoryList(results, [], "");
-      return;
-    }
-
-    const matches = searchArticles(articles, query);
-
-    renderMessage(
-      status,
-      matches.length
-        ? `${matches.length} result${matches.length === 1 ? "" : "s"} for “${query}”`
-        : `No stories found for “${query}”.`
-    );
-
-    renderStoryList(results, matches, "");
-  };
-
-  const initialQuery = (getQueryParam("q") || "").trim();
-  runSearch(initialQuery);
-
-  if (form) {
-    form.addEventListener("submit", event => {
-      event.preventDefault();
-      const query = (input && input.value ? input.value : "").trim();
-      const newUrl = query ? searchUrl(query) : "search.html";
-      window.history.pushState({}, "", newUrl);
-      runSearch(query);
-    });
-  }
-}
-
-function searchArticles(articles, query) {
-  const q = query.toLowerCase();
-
-  return articles.filter(article => {
-    const haystacks = [
-      article.title,
-      article.description,
-      article.dek,
-      article.category,
-      ...(Array.isArray(article.tags) ? article.tags : [])
-    ];
-
-    return haystacks.some(value => (value || "").toLowerCase().includes(q));
-  });
-}
-
-/* =========================================================
-   Category page
-   ========================================================= */
-
-async function initCategoryPage() {
-  const status = document.getElementById("category-status");
-  const results = document.getElementById("category-results");
-  const linksWrap = document.getElementById("category-links");
-  const heading = document.getElementById("category-heading");
-
-  let articles = [];
-
-  try {
-    articles = await getArticles();
-  } catch (error) {
-    console.warn("Jaziel:", error);
-    renderMessage(status, "Stories couldn't be loaded right now. Please try again later.");
-    return;
-  }
-
-  const categories = uniqueCategories(articles);
-  renderCategoryLinks(linksWrap, categories);
-
-  const category = (getQueryParam("category") || "").trim();
-
-  if (!category) {
-    if (heading) heading.textContent = "Browse Categories";
-    renderMessage(
-      status,
-      categories.length ? "Choose a category to explore." : "No categories available yet."
-    );
-    renderStoryList(results, [], "");
-    return;
-  }
-
-  const matches = articles.filter(
-    a => (a.category || "").toLowerCase() === category.toLowerCase()
-  );
-
-  if (heading) heading.textContent = category;
-  document.title = `${category} Stories | Jaziel`;
-
-  renderMessage(
-    status,
-    matches.length
-      ? `${matches.length} stor${matches.length === 1 ? "y" : "ies"} in ${category}`
-      : `No stories found in ${category} yet.`
-  );
-
-  renderStoryList(results, matches, "");
-}
-
-function uniqueCategories(articles) {
-  return [...new Set(articles.map(a => a.category).filter(Boolean))].sort();
-}
-
-function renderCategoryLinks(wrap, categories) {
-  if (!wrap) return;
-
-  if (!categories.length) {
-    wrap.innerHTML = "";
-    return;
-  }
-
-  wrap.innerHTML = categories
-    .map(
-      cat =>
-        `<a class="category-chip" href="${escapeAttribute(categoryUrl(cat))}">${escapeHTML(cat)}</a>`
-    )
-    .join("");
-}
 
 /* =========================================================
    Search button (header, all pages)
@@ -596,7 +460,7 @@ function escapeHTML(value) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
 
