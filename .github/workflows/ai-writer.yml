@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: jaziel-ai-writer-${{ github.event.inputs.request_id }}
+  group: jaziel-main-writers
   cancel-in-progress: false
 
 jobs:
