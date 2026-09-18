@@ -108,25 +108,13 @@
     link.href = href;
   }
 
-  function setPaginationSEO(canonicalBase, current, total) {
-    if (current === "all") {
-      setMeta('link[rel="canonical"]', "href", canonicalBase);
-      setMeta('meta[property="og:url"]', "content", canonicalBase);
-      setLinkRel("prev", "");
-      setLinkRel("next", "");
-      return;
-    }
-
-    const canonicalURL = current === 1 ? canonicalBase : `${canonicalBase}?page=${current}`;
-    setMeta('link[rel="canonical"]', "href", canonicalURL);
-    setMeta('meta[property="og:url"]', "content", canonicalURL);
-
-    const previousURL = current > 1
-      ? `${canonicalBase}${current - 1 === 1 ? "" : `?page=${current - 1}`}`
-      : "";
-    const nextURL = current < total ? `${canonicalBase}?page=${current + 1}` : "";
-    setLinkRel("prev", previousURL);
-    setLinkRel("next", nextURL);
+  function setPaginationSEO(canonicalBase) {
+    // Query-string pagination is a client-side view of the same static document.
+    // Keep one canonical URL so the HTML source and runtime metadata agree.
+    setMeta('link[rel="canonical"]', "href", canonicalBase);
+    setMeta('meta[property="og:url"]', "content", canonicalBase);
+    setLinkRel("prev", "");
+    setLinkRel("next", "");
   }
 
   function paginatedRenderArticle(root, article) {
@@ -226,8 +214,8 @@
     if (meta) meta.hidden = !showIntro;
 
     const canonical = `${window.location.origin}/articles/${encodeURIComponent(slug)}.html`;
-    setPaginationSEO(canonical, current, total);
-    setArticleStructuredData(current === "all" ? canonical : current === 1 ? canonical : `${canonical}?page=${current}`);
+    setPaginationSEO(canonical);
+    setArticleStructuredData(canonical);
   }
 
   window.renderArticle = paginatedRenderArticle;
