@@ -11,6 +11,9 @@ on:
       - ".github/workflows/validate-javascript.yml"
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 jobs:
   syntax:
     runs-on: ubuntu-latest
