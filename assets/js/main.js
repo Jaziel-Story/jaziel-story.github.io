@@ -210,12 +210,6 @@ async function initArticlePage() {
     renderArticle(root, article);
     updateArticleMeta(article);
 
-    const related = findRelatedArticles(articles, article, 3);
-
-    if (related.length && relatedSection && relatedList) {
-      relatedList.innerHTML = related.map(storyCardHTML).join("");
-      relatedSection.hidden = false;
-    }
   } catch (error) {
     console.warn("Jaziel:", error);
     renderErrorState(root);
@@ -337,31 +331,6 @@ function renderBibleVerse(verse) {
       ${reference ? `<cite>${escapeHTML(reference)}</cite>` : ""}
     </blockquote>
   `;
-}
-
-function findRelatedArticles(articles, current, limit) {
-  const currentTags = new Set(Array.isArray(current.tags) ? current.tags : []);
-
-  const scored = articles
-    .filter(a => a.slug !== current.slug)
-    .map(a => {
-      let score = 0;
-      if (a.category && current.category && a.category === current.category) {
-        score += 2;
-      }
-      if (Array.isArray(a.tags)) {
-        score += a.tags.filter(tag => currentTags.has(tag)).length;
-      }
-      return { article: a, score };
-    })
-    .filter(entry => entry.score > 0)
-    .sort(
-      (a, b) =>
-        b.score - a.score ||
-        new Date(b.article.date || 0) - new Date(a.article.date || 0)
-    );
-
-  return scored.slice(0, limit).map(entry => entry.article);
 }
 
 function updateArticleMeta(article) {
